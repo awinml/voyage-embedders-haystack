@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "example-store"
+name = "voyage-embedders-haystack"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
 requires-python = ">=3.7"
 license = "Apache-2.0"
-keywords = []
+keywords = ["voyage_embedders", "voyageai", "haystack"]
 authors = [
   { name = "Ashwin Mathur", email = "" },
 ]
@@ -28,6 +28,8 @@ dependencies = [
   # we distribute the preview version of Haystack 2.0 under the package "haystack-ai"
   "haystack-ai",
   "typing_extensions",
+  "numpy",
+  "voyageai"
 ]
 
 [project.urls]
@@ -77,7 +79,7 @@ fmt = [
   "style",
 ]
 all = [
-  "style",
+  "fmt",
   "typing",
 ]
 
@@ -150,10 +152,11 @@ branch = true
 parallel = true
 omit = [
   "src/voyage_embedders/__about__.py",
+  "example"
 ]
 
 [tool.coverage.paths]
-example_store = ["src/voyage_embedders", "*/voyage_embedders/src/voyage_embedders"]
+voyage_embedders = ["src/voyage_embedders", "*/voyage_embedders/src/voyage_embedders"]
 tests = ["tests", "*voyage_embedders/tests"]
 
 [tool.coverage.report]
@@ -169,6 +172,9 @@ markers = [
   "unit: unit tests",
   "integration: integration tests"
 ]
+
+[tool.mypy]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
