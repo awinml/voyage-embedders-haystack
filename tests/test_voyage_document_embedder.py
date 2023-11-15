@@ -9,8 +9,8 @@ from haystack.preview import Document
 from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
 
 
-def mock_voyageai_response(input: List[str], model: str = "voyage-01", **kwargs) -> List[List[float]]:  # noqa
-    response = [[np.random.rand(1024).tolist()] for i in range(len(input))]
+def mock_voyageai_response(list_of_text: List[str], model: str = "voyage-01", **kwargs) -> List[List[float]]:  # noqa
+    response = [np.random.rand(1024).tolist() for i in range(len(list_of_text))]
     return response
 
 
@@ -24,7 +24,6 @@ class TestVoyageDocumentEmbedder:
         assert voyageai.api_key == "fake-api-key"
 
         assert embedder.model_name == "voyage-01"
-        assert embedder.organization is None
         assert embedder.prefix == ""
         assert embedder.suffix == ""
         assert embedder.batch_size == 8
@@ -37,22 +36,19 @@ class TestVoyageDocumentEmbedder:
         embedder = VoyageDocumentEmbedder(
             api_key="fake-api-key",
             model_name="model",
-            organization="my-org",
             prefix="prefix",
             suffix="suffix",
-            batch_size=64,
+            batch_size=4,
             progress_bar=False,
             metadata_fields_to_embed=["test_field"],
             embedding_separator=" | ",
         )
         assert voyageai.api_key == "fake-api-key"
-        assert voyageai.organization == "my-org"
 
-        assert embedder.organization == "my-org"
         assert embedder.model_name == "model"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
-        assert embedder.batch_size == 64
+        assert embedder.batch_size == 4
         assert embedder.progress_bar is False
         assert embedder.metadata_fields_to_embed == ["test_field"]
         assert embedder.embedding_separator == " | "
@@ -110,7 +106,7 @@ class TestVoyageDocumentEmbedder:
     @pytest.mark.unit
     def test_prepare_texts_to_embed_w_metadata(self):
         documents = [
-            Document(content=f"document number {i}:\ncontent", meta={"meta_field": f"meta_value {i}"}) for i in range(5)
+            Document(content=f"document number {i}: content", meta={"meta_field": f"meta_value {i}"}) for i in range(5)
         ]
 
         embedder = VoyageDocumentEmbedder(
@@ -148,13 +144,13 @@ class TestVoyageDocumentEmbedder:
     def test_embed_batch(self):
         texts = ["text 1", "text 2", "text 3", "text 4", "text 5"]
 
-        with patch("voyage_embedders.voyageai_document_embedder.get_embeddings") as voyageai_embedding_patch:
-            voyageai_embedding_patch.create.side_effect = mock_voyageai_response
+        with patch("voyage_embedders.voyage_document_embedder.get_embeddings") as voyageai_embedding_patch:
+            voyageai_embedding_patch.side_effect = mock_voyageai_response
             embedder = VoyageDocumentEmbedder(api_key="fake-api-key", model_name="model")
 
             embeddings = embedder._embed_batch(texts_to_embed=texts, batch_size=2)
 
-            assert voyageai_embedding_patch.create.call_count == 3
+            assert voyageai_embedding_patch.call_count == 3
 
         assert isinstance(embeddings, list)
         assert len(embeddings) == len(texts)
@@ -171,8 +167,8 @@ class TestVoyageDocumentEmbedder:
         ]
 
         model = "voyage-01-lite"
-        with patch("voyage_embedders.voyageai_document_embedder.get_embeddings") as voyageai_embedding_patch:
-            voyageai_embedding_patch.create.side_effect = mock_voyageai_response
+        with patch("voyage_embedders.voyage_document_embedder.get_embeddings") as voyageai_embedding_patch:
+            voyageai_embedding_patch.side_effect = mock_voyageai_response
             embedder = VoyageDocumentEmbedder(
                 api_key="fake-api-key",
                 model_name=model,
@@ -184,12 +180,13 @@ class TestVoyageDocumentEmbedder:
 
             result = embedder.run(documents=docs)
 
-            voyageai_embedding_patch.create.assert_called_once_with(
+            voyageai_embedding_patch.assert_called_once_with(
                 model=model,
-                input=[
+                list_of_text=[
                     "prefix Cuisine | I love cheese suffix",
                     "prefix ML | A transformer is a deep learning architecture suffix",
                 ],
+                batch_size=8,
             )
         documents_with_embeddings = result["documents"]
 
@@ -209,8 +206,8 @@ class TestVoyageDocumentEmbedder:
         ]
 
         model = "voyage-01-lite"
-        with patch("voyage_embedders.voyageai_document_embedder.get_embeddings") as voyageai_embedding_patch:
-            voyageai_embedding_patch.create.side_effect = mock_voyageai_response
+        with patch("voyage_embedders.voyage_document_embedder.get_embeddings") as voyageai_embedding_patch:
+            voyageai_embedding_patch.side_effect = mock_voyageai_response
             embedder = VoyageDocumentEmbedder(
                 api_key="fake-api-key",
                 model_name=model,
@@ -223,7 +220,7 @@ class TestVoyageDocumentEmbedder:
 
             result = embedder.run(documents=docs)
 
-            assert voyageai_embedding_patch.create.call_count == 2
+            assert voyageai_embedding_patch.call_count == 2
 
         documents_with_embeddings = result["documents"]
 

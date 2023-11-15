@@ -4,11 +4,12 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import voyageai
-from haystack.preview.components.embedders.voyage_text_embedder import VoyageTextEmbedder
+
+from voyage_embedders.voyage_text_embedder import VoyageTextEmbedder
 
 
-def mock_voyageai_response(input: str, model: str = "voyage-01", **kwargs) -> List[float]:  # noqa
-    response = [np.random.rand(1024).tolist()]
+def mock_voyageai_response(text: str, model: str = "voyage-01", **kwargs) -> List[float]:  # noqa
+    response = np.random.rand(1024).tolist()
     return response
 
 
@@ -80,14 +81,12 @@ class TestVoyageTextEmbedder:
         model = "voyage-01-lite"
 
         with patch("voyage_embedders.voyage_text_embedder.get_embedding") as voyageai_embedding_patch:
-            voyageai_embedding_patch.create.side_effect = mock_voyageai_response
+            voyageai_embedding_patch.side_effect = mock_voyageai_response
 
             embedder = VoyageTextEmbedder(api_key="fake-api-key", model_name=model, prefix="prefix ", suffix=" suffix")
             result = embedder.run(text="The food was delicious")
 
-            voyageai_embedding_patch.create.assert_called_once_with(
-                model=model, input="prefix The food was delicious suffix"
-            )
+            voyageai_embedding_patch.assert_called_once_with(model=model, text="prefix The food was delicious suffix")
 
         assert len(result["embedding"]) == 1024
         assert all(isinstance(x, float) for x in result["embedding"])

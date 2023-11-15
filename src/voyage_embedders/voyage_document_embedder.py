@@ -127,7 +127,7 @@ class VoyageDocumentEmbedder:
             range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
         ):
             batch = texts_to_embed[i : i + batch_size]
-            embeddings = get_embeddings(input=batch, batch_size=batch_size, model=self.model_name)
+            embeddings = get_embeddings(list_of_text=batch, batch_size=batch_size, model=self.model_name)
             all_embeddings.extend(embeddings)
 
         return all_embeddings
