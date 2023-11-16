@@ -51,7 +51,7 @@ test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
 cov-report = [
   "- coverage combine",
-  "coverage report",
+  "coverage report xml",
 ]
 cov = [
   "test-cov",
@@ -166,9 +166,6 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
-
-[tool.coverage.xml]
-output="coverage.xml"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
