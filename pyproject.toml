@@ -167,6 +167,9 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 
+[tool.coverage.xml]
+output="coverage.xml"
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 markers = [
