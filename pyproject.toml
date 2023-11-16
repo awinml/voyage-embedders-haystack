@@ -37,6 +37,9 @@ Documentation = "https://github.com/awinml/voyage-embedders-haystack#readme"
 Issues = "https://github.com/awinml/voyage-embedders-haystack/issues"
 Source = "https://github.com/awinml/voyage-embedders-haystack"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/voyage_embedders"]
+
 [tool.hatch.version]
 path = "src/voyage_embedders/__about__.py"
 
