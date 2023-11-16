@@ -43,6 +43,7 @@ path = "src/voyage_embedders/__about__.py"
 [tool.hatch.envs.default]
 dependencies = [
   "coverage[toml]>=6.5",
+  "coveralls",
   "pytest",
 ]
 [tool.hatch.envs.default.scripts]

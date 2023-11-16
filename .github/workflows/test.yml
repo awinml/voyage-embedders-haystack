@@ -1,5 +1,3 @@
-# This workflow comes from https://github.com/ofek/hatch-mypyc
-# https://github.com/ofek/hatch-mypyc/blob/5a198c0ba8660494d02716cfc9d79ce4adfb1442/.github/workflows/test.yml
 name: Test
 
 on:
@@ -47,3 +45,21 @@ jobs:
 
     - name: Run tests
       run: hatch run cov
+      
+    - name: Coveralls Parallel
+        # We upload only coverage for ubuntu as handling both os
+        # complicates the workflow too much for little to no gain
+        if: matrix.os == 'ubuntu-latest'
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel: true
+          
+  upload-coverage:
+    needs: run
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Coveralls Finished
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
