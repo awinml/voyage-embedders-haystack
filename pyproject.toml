@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "voyage_embedders"
+name = "voyage-embedders-haystack"
 dynamic = ["version"]
-description = ''
+description = 'Haystack 2.x component to embed strings and Documents using VoyageAI Embedding models.'
 readme = "README.md"
 requires-python = ">=3.7"
 license = "Apache-2.0"
-keywords = ["voyage_embedders", "voyageai", "haystack"]
+keywords = ["Haystack", "VoyageAI"]
 authors = [
   { name = "Ashwin Mathur", email = "" },
 ]
