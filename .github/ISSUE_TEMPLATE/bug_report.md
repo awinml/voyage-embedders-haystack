@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Create a report to help us improve.
-title: "[bug]: Describe bug and issue"
+title: "bug: Describe bug and issue"
 labels: bug
 assignees: awinml
 

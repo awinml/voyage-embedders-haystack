@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: "[feat req]: Brief description of feature being requested"
+title: "feature request: Brief description of feature being requested"
 labels: enhancement
 assignees: awinml
 
