@@ -36,7 +36,7 @@ dependencies = [
   "haystack-ai",
   "typing_extensions",
   "numpy",
-  "voyageai"
+  "voyageai=1.3.0"
 ]
 
 [project.urls]
