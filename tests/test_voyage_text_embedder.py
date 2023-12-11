@@ -21,6 +21,7 @@ class TestVoyageTextEmbedder:
         embedder = VoyageTextEmbedder()
 
         assert voyageai.api_key == "fake-api-key"
+        assert embedder.input_type == "query"
         assert embedder.model_name == "voyage-01"
         assert embedder.prefix == ""
         assert embedder.suffix == ""
@@ -30,11 +31,13 @@ class TestVoyageTextEmbedder:
         embedder = VoyageTextEmbedder(
             api_key="fake-api-key",
             model_name="model",
+            input_type="document",
             prefix="prefix",
             suffix="suffix",
         )
         assert voyageai.api_key == "fake-api-key"
         assert embedder.model_name == "model"
+        assert embedder.input_type == "document"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
 
@@ -50,9 +53,10 @@ class TestVoyageTextEmbedder:
         component = VoyageTextEmbedder(api_key="fake-api-key")
         data = component.to_dict()
         assert data == {
-            "type": "VoyageTextEmbedder",
+            "type": "voyage_embedders.voyage_text_embedder.VoyageTextEmbedder",
             "init_parameters": {
                 "model_name": "voyage-01",
+                "input_type": "query",
                 "prefix": "",
                 "suffix": "",
             },
@@ -63,14 +67,16 @@ class TestVoyageTextEmbedder:
         component = VoyageTextEmbedder(
             api_key="fake-api-key",
             model_name="model",
+            input_type="document",
             prefix="prefix",
             suffix="suffix",
         )
         data = component.to_dict()
         assert data == {
-            "type": "VoyageTextEmbedder",
+            "type": "voyage_embedders.voyage_text_embedder.VoyageTextEmbedder",
             "init_parameters": {
                 "model_name": "model",
+                "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
             },
@@ -86,7 +92,9 @@ class TestVoyageTextEmbedder:
             embedder = VoyageTextEmbedder(api_key="fake-api-key", model_name=model, prefix="prefix ", suffix=" suffix")
             result = embedder.run(text="The food was delicious")
 
-            voyageai_embedding_patch.assert_called_once_with(model=model, text="prefix The food was delicious suffix")
+            voyageai_embedding_patch.assert_called_once_with(
+                model=model, text="prefix The food was delicious suffix", input_type="query"
+            )
 
         assert len(result["embedding"]) == 1024
         assert all(isinstance(x, float) for x in result["embedding"])

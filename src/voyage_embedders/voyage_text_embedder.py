@@ -2,7 +2,8 @@ import os
 from typing import Any, Dict, List, Optional
 
 import voyageai
-from haystack.preview import component, default_to_dict
+from haystack.core.component import component
+from haystack.core.serialization import default_to_dict
 from voyageai import get_embedding
 
 
@@ -29,6 +30,7 @@ class VoyageTextEmbedder:
         self,
         api_key: Optional[str] = None,
         model_name: str = "voyage-01",
+        input_type: str = "query",
         prefix: str = "",
         suffix: str = "",
     ):
@@ -40,6 +42,9 @@ class VoyageTextEmbedder:
         :param model_name: The name of the Voyage model to use. Defaults to "voyage-01".
         For more details on the available models,
             see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
+        :param input_type: Type of the input text. Defaults to `"query"`. This will set the prepend the text with,
+        "Represent the query for retrieving supporting documents: ".  Can be set to `None` for no prompt or `"document"`
+        for the document prompt.
         :param prefix: A string to add to the beginning of each text.
         :param suffix: A string to add to the end of each text.
         """
@@ -55,6 +60,7 @@ class VoyageTextEmbedder:
         voyageai.api_key = api_key
 
         self.model_name = model_name
+        self.input_type = input_type
         self.prefix = prefix
         self.suffix = suffix
 
@@ -64,7 +70,9 @@ class VoyageTextEmbedder:
         to the constructor.
         """
 
-        return default_to_dict(self, model_name=self.model_name, prefix=self.prefix, suffix=self.suffix)
+        return default_to_dict(
+            self, model_name=self.model_name, input_type=self.input_type, prefix=self.prefix, suffix=self.suffix
+        )
 
     @component.output_types(embedding=List[float])
     def run(self, text: str):
@@ -75,6 +83,6 @@ class VoyageTextEmbedder:
 
         text_to_embed = self.prefix + text + self.suffix
 
-        embedding = get_embedding(text=text_to_embed, model=self.model_name)
+        embedding = get_embedding(text=text_to_embed, model=self.model_name, input_type=self.input_type)
 
         return {"embedding": embedding}
