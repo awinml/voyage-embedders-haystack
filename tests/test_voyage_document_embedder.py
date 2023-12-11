@@ -4,7 +4,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import voyageai
-from haystack.preview import Document
+from haystack.dataclasses import Document
 
 from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
 

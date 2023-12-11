@@ -21,6 +21,7 @@ class TestVoyageTextEmbedder:
         embedder = VoyageTextEmbedder()
 
         assert voyageai.api_key == "fake-api-key"
+        assert embedder.input_type == "query"
         assert embedder.model_name == "voyage-01"
         assert embedder.prefix == ""
         assert embedder.suffix == ""
@@ -30,11 +31,13 @@ class TestVoyageTextEmbedder:
         embedder = VoyageTextEmbedder(
             api_key="fake-api-key",
             model_name="model",
+            input_type="document",
             prefix="prefix",
             suffix="suffix",
         )
         assert voyageai.api_key == "fake-api-key"
         assert embedder.model_name == "model"
+        assert embedder.input_type == "document"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
 
@@ -53,6 +56,7 @@ class TestVoyageTextEmbedder:
             "type": "VoyageTextEmbedder",
             "init_parameters": {
                 "model_name": "voyage-01",
+                "input_type": "query",
                 "prefix": "",
                 "suffix": "",
             },
@@ -63,6 +67,7 @@ class TestVoyageTextEmbedder:
         component = VoyageTextEmbedder(
             api_key="fake-api-key",
             model_name="model",
+            input_type="document",
             prefix="prefix",
             suffix="suffix",
         )
@@ -71,6 +76,7 @@ class TestVoyageTextEmbedder:
             "type": "VoyageTextEmbedder",
             "init_parameters": {
                 "model_name": "model",
+                "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
             },
