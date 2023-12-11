@@ -4,7 +4,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import voyageai
-from haystack.preview import Document
+from haystack.dataclasses import Document
 
 from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
 
@@ -24,6 +24,7 @@ class TestVoyageDocumentEmbedder:
         assert voyageai.api_key == "fake-api-key"
 
         assert embedder.model_name == "voyage-01"
+        assert embedder.input_type == "document"
         assert embedder.prefix == ""
         assert embedder.suffix == ""
         assert embedder.batch_size == 8
@@ -36,6 +37,7 @@ class TestVoyageDocumentEmbedder:
         embedder = VoyageDocumentEmbedder(
             api_key="fake-api-key",
             model_name="model",
+            input_type="query",
             prefix="prefix",
             suffix="suffix",
             batch_size=4,
@@ -46,6 +48,7 @@ class TestVoyageDocumentEmbedder:
         assert voyageai.api_key == "fake-api-key"
 
         assert embedder.model_name == "model"
+        assert embedder.input_type == "query"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
         assert embedder.batch_size == 4
@@ -65,9 +68,10 @@ class TestVoyageDocumentEmbedder:
         component = VoyageDocumentEmbedder(api_key="fake-api-key")
         data = component.to_dict()
         assert data == {
-            "type": "VoyageDocumentEmbedder",
+            "type": "voyage_embedders.voyage_document_embedder.VoyageDocumentEmbedder",
             "init_parameters": {
                 "model_name": "voyage-01",
+                "input_type": "document",
                 "prefix": "",
                 "suffix": "",
                 "batch_size": 8,
@@ -82,6 +86,7 @@ class TestVoyageDocumentEmbedder:
         component = VoyageDocumentEmbedder(
             api_key="fake-api-key",
             model_name="model",
+            input_type="query",
             prefix="prefix",
             suffix="suffix",
             batch_size=4,
@@ -91,9 +96,10 @@ class TestVoyageDocumentEmbedder:
         )
         data = component.to_dict()
         assert data == {
-            "type": "VoyageDocumentEmbedder",
+            "type": "voyage_embedders.voyage_document_embedder.VoyageDocumentEmbedder",
             "init_parameters": {
                 "model_name": "model",
+                "input_type": "query",
                 "prefix": "prefix",
                 "suffix": "suffix",
                 "batch_size": 4,
@@ -187,6 +193,7 @@ class TestVoyageDocumentEmbedder:
                     "prefix ML | A transformer is a deep learning architecture suffix",
                 ],
                 batch_size=8,
+                input_type="document",
             )
         documents_with_embeddings = result["documents"]
 
