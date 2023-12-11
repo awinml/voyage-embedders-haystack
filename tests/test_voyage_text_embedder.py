@@ -53,7 +53,7 @@ class TestVoyageTextEmbedder:
         component = VoyageTextEmbedder(api_key="fake-api-key")
         data = component.to_dict()
         assert data == {
-            "type": "VoyageTextEmbedder",
+            "type": "voyage_embedders.voyage_text_embedder.VoyageTextEmbedder",
             "init_parameters": {
                 "model_name": "voyage-01",
                 "input_type": "query",
@@ -73,7 +73,7 @@ class TestVoyageTextEmbedder:
         )
         data = component.to_dict()
         assert data == {
-            "type": "VoyageTextEmbedder",
+            "type": "voyage_embedders.voyage_text_embedder.VoyageTextEmbedder",
             "init_parameters": {
                 "model_name": "model",
                 "input_type": "document",
@@ -92,7 +92,9 @@ class TestVoyageTextEmbedder:
             embedder = VoyageTextEmbedder(api_key="fake-api-key", model_name=model, prefix="prefix ", suffix=" suffix")
             result = embedder.run(text="The food was delicious")
 
-            voyageai_embedding_patch.assert_called_once_with(model=model, text="prefix The food was delicious suffix")
+            voyageai_embedding_patch.assert_called_once_with(
+                model=model, text="prefix The food was delicious suffix", input_type="query"
+            )
 
         assert len(result["embedding"]) == 1024
         assert all(isinstance(x, float) for x in result["embedding"])

@@ -65,7 +65,7 @@ class TestVoyageDocumentEmbedder:
         component = VoyageDocumentEmbedder(api_key="fake-api-key")
         data = component.to_dict()
         assert data == {
-            "type": "VoyageDocumentEmbedder",
+            "type": "voyage_embedders.voyage_document_embedder.VoyageDocumentEmbedder",
             "init_parameters": {
                 "model_name": "voyage-01",
                 "prefix": "",
@@ -91,7 +91,7 @@ class TestVoyageDocumentEmbedder:
         )
         data = component.to_dict()
         assert data == {
-            "type": "VoyageDocumentEmbedder",
+            "type": "voyage_embedders.voyage_document_embedder.VoyageDocumentEmbedder",
             "init_parameters": {
                 "model_name": "model",
                 "prefix": "prefix",
@@ -187,6 +187,7 @@ class TestVoyageDocumentEmbedder:
                     "prefix ML | A transformer is a deep learning architecture suffix",
                 ],
                 batch_size=8,
+                input_type="document",
             )
         documents_with_embeddings = result["documents"]
 

@@ -2,9 +2,9 @@ import os
 from typing import Any, Dict, List, Optional
 
 import voyageai
-from haystack.dataclasses import Document
 from haystack.core.component import component
 from haystack.core.serialization import default_to_dict
+from haystack.dataclasses import Document
 from tqdm import tqdm
 from voyageai import get_embeddings
 
