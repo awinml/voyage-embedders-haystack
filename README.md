@@ -17,13 +17,13 @@ Custom component for [Haystack](https://github.com/deepset-ai/haystack) (2.x) fo
 
 
 
-#### What's New:
+#### What's New
 
 - **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.
 - **[v1.0.0 - 21/11/23]:** Added `VoyageTextEmbedder` and `VoyageDocument Embedder` to embed strings and documents.
 
 
-## Installation:
+## Installation
 
 ```bash
 pip install voyage-embedders-haystack
