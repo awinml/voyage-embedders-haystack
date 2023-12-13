@@ -2,7 +2,9 @@ import os
 from typing import Any, Dict, List, Optional
 
 import voyageai
-from haystack.preview import Document, component, default_to_dict
+from haystack.core.component import component
+from haystack.core.serialization import default_to_dict
+from haystack.dataclasses import Document
 from tqdm import tqdm
 from voyageai import get_embeddings
 
@@ -35,6 +37,7 @@ class VoyageDocumentEmbedder:
         self,
         api_key: Optional[str] = None,
         model_name: str = "voyage-01",
+        input_type: str = "document",
         prefix: str = "",
         suffix: str = "",
         batch_size: int = 8,
@@ -49,6 +52,8 @@ class VoyageDocumentEmbedder:
         :param model_name: The name of the model to use. Defaults to "voyage-01".
         For more details on the available models,
             see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
+        :param input_type: Type of the input text. Defaults to `"document"`. This will set the prepend the text with,
+        "Represent the document for retrieval: ". Can be set to `None` for no prompt or `"query"` for the query prompt.
         :param prefix: A string to add to the beginning of each text.
         :param suffix: A string to add to the end of each text.
         :param batch_size: Number of Documents to encode at once.
@@ -69,6 +74,7 @@ class VoyageDocumentEmbedder:
         voyageai.api_key = api_key
 
         self.model_name = model_name
+        self.input_type = input_type
         self.prefix = prefix
         self.suffix = suffix
 
@@ -90,6 +96,7 @@ class VoyageDocumentEmbedder:
         return default_to_dict(
             self,
             model_name=self.model_name,
+            input_type=self.input_type,
             prefix=self.prefix,
             suffix=self.suffix,
             batch_size=self.batch_size,
@@ -127,7 +134,9 @@ class VoyageDocumentEmbedder:
             range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
         ):
             batch = texts_to_embed[i : i + batch_size]
-            embeddings = get_embeddings(list_of_text=batch, batch_size=batch_size, model=self.model_name)
+            embeddings = get_embeddings(
+                list_of_text=batch, batch_size=batch_size, model=self.model_name, input_type=self.input_type
+            )
             all_embeddings.extend(embeddings)
 
         return all_embeddings
