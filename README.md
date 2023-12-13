@@ -15,7 +15,7 @@
 
 Custom component for [Haystack](https://github.com/deepset-ai/haystack) (2.x) for creating embeddings using the [VoyageAI Embedding Models](https://voyageai.com/).
 
-Voyage’s embedding models, `voyage-01`, `voyage-lite-01`, `voyage-lite-01-instruct`, are state-of-the-art in retrieval accuracy. These models outperform top perferforming embedding models like `BAAI-bge` and `OpenAI text-embedding-ada-002` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
+Voyage’s embedding models, `voyage-01` and `voyage-lite-01`, are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `BAAI-bge` and `OpenAI text-embedding-ada-002` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
 
 #### What's New
@@ -35,7 +35,7 @@ pip install voyage-embedders-haystack
 You can use Voyage Embedding models with two components: [VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py) and [VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py).
 
 To create semantic embeddings for documents, use `VoyageDocumentEmbedder` in your indexing pipeline. For generating embeddings for queries, use `VoyageTextEmbedder`. Once you've selected the suitable component for your specific use case, initialize the component with the model name and VoyageAI API key. You can also
-set the environment variable VOYAGE_API_KEY instead of passing the api key as an argument.
+set the environment variable "VOYAGE_API_KEY" instead of passing the api key as an argument.
 
 Information about the supported models, can be found on the [Embeddings Documentation.](https://docs.voyageai.com/embeddings/)
 
