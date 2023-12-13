@@ -15,6 +15,7 @@
 
 Custom component for [Haystack](https://github.com/deepset-ai/haystack) (2.x) for creating embeddings using the [VoyageAI Embedding Models](https://voyageai.com/).
 
+Voyage’s embedding models, `voyage-01`, `voyage-lite-01`, `voyage-lite-01-instruct`, are state-of-the-art in retrieval accuracy. These models outperform top perferforming embedding models like `BAAI-bge` and `OpenAI text-embedding-ada-002` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
 
 #### What's New
