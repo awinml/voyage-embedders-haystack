@@ -13,6 +13,7 @@ concurrency:
 env:
   PYTHONUNBUFFERED: "1"
   FORCE_COLOR: "1"
+  VOYAGE_API_KEY: ${{ secrets.VOYAGEAI_API_KEY }}
 
 jobs:
   run:
