@@ -1,33 +1,24 @@
-from typing import List
-from unittest.mock import patch
+import os
 
-import numpy as np
 import pytest
-import voyageai
 from haystack.dataclasses import Document
 
 from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
 
 
-def mock_voyageai_response(list_of_text: List[str], model: str = "voyage-01", **kwargs) -> List[List[float]]:  # noqa
-    response = [np.random.rand(1024).tolist() for i in range(len(list_of_text))]
-    return response
-
-
 class TestVoyageDocumentEmbedder:
     @pytest.mark.unit
     def test_init_default(self, monkeypatch):
-        voyageai.api_key = None
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         embedder = VoyageDocumentEmbedder()
 
-        assert voyageai.api_key == "fake-api-key"
-
-        assert embedder.model_name == "voyage-01"
+        assert embedder.client.api_key == "fake-api-key"
+        assert embedder.model == "voyage-2"
         assert embedder.input_type == "document"
+        assert embedder.truncate is None
         assert embedder.prefix == ""
         assert embedder.suffix == ""
-        assert embedder.batch_size == 8
+        assert embedder.batch_size == 32
         assert embedder.progress_bar is True
         assert embedder.metadata_fields_to_embed == []
         assert embedder.embedding_separator == "\n"
@@ -36,8 +27,9 @@ class TestVoyageDocumentEmbedder:
     def test_init_with_parameters(self):
         embedder = VoyageDocumentEmbedder(
             api_key="fake-api-key",
-            model_name="model",
+            model="model",
             input_type="query",
+            truncate=True,
             prefix="prefix",
             suffix="suffix",
             batch_size=4,
@@ -45,10 +37,11 @@ class TestVoyageDocumentEmbedder:
             metadata_fields_to_embed=["test_field"],
             embedding_separator=" | ",
         )
-        assert voyageai.api_key == "fake-api-key"
 
-        assert embedder.model_name == "model"
+        assert embedder.client.api_key == "fake-api-key"
+        assert embedder.model == "model"
         assert embedder.input_type == "query"
+        assert embedder.truncate is True
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
         assert embedder.batch_size == 4
@@ -58,7 +51,6 @@ class TestVoyageDocumentEmbedder:
 
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
-        voyageai.api_key = None
         monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
         with pytest.raises(ValueError, match="VoyageDocumentEmbedder expects an VoyageAI API key"):
             VoyageDocumentEmbedder()
@@ -70,11 +62,12 @@ class TestVoyageDocumentEmbedder:
         assert data == {
             "type": "voyage_embedders.voyage_document_embedder.VoyageDocumentEmbedder",
             "init_parameters": {
-                "model_name": "voyage-01",
+                "model": "voyage-2",
                 "input_type": "document",
+                "truncate": None,
                 "prefix": "",
                 "suffix": "",
-                "batch_size": 8,
+                "batch_size": 32,
                 "progress_bar": True,
                 "metadata_fields_to_embed": [],
                 "embedding_separator": "\n",
@@ -85,8 +78,9 @@ class TestVoyageDocumentEmbedder:
     def test_to_dict_with_custom_init_parameters(self):
         component = VoyageDocumentEmbedder(
             api_key="fake-api-key",
-            model_name="model",
+            model="model",
             input_type="query",
+            truncate=True,
             prefix="prefix",
             suffix="suffix",
             batch_size=4,
@@ -98,8 +92,9 @@ class TestVoyageDocumentEmbedder:
         assert data == {
             "type": "voyage_embedders.voyage_document_embedder.VoyageDocumentEmbedder",
             "init_parameters": {
-                "model_name": "model",
+                "model": "model",
                 "input_type": "query",
+                "truncate": True,
                 "prefix": "prefix",
                 "suffix": "suffix",
                 "batch_size": 4,
@@ -147,99 +142,6 @@ class TestVoyageDocumentEmbedder:
         ]
 
     @pytest.mark.unit
-    def test_embed_batch(self):
-        texts = ["text 1", "text 2", "text 3", "text 4", "text 5"]
-
-        with patch("voyage_embedders.voyage_document_embedder.get_embeddings") as voyageai_embedding_patch:
-            voyageai_embedding_patch.side_effect = mock_voyageai_response
-            embedder = VoyageDocumentEmbedder(api_key="fake-api-key", model_name="model")
-
-            embeddings = embedder._embed_batch(texts_to_embed=texts, batch_size=2)
-
-            assert voyageai_embedding_patch.call_count == 3
-
-        assert isinstance(embeddings, list)
-        assert len(embeddings) == len(texts)
-        for embedding in embeddings:
-            assert isinstance(embedding, list)
-            assert len(embedding) == 1024
-            assert all(isinstance(x, float) for x in embedding)
-
-    @pytest.mark.unit
-    def test_run(self):
-        docs = [
-            Document(content="I love cheese", meta={"topic": "Cuisine"}),
-            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
-        ]
-
-        model = "voyage-01-lite"
-        with patch("voyage_embedders.voyage_document_embedder.get_embeddings") as voyageai_embedding_patch:
-            voyageai_embedding_patch.side_effect = mock_voyageai_response
-            embedder = VoyageDocumentEmbedder(
-                api_key="fake-api-key",
-                model_name=model,
-                prefix="prefix ",
-                suffix=" suffix",
-                metadata_fields_to_embed=["topic"],
-                embedding_separator=" | ",
-            )
-
-            result = embedder.run(documents=docs)
-
-            voyageai_embedding_patch.assert_called_once_with(
-                model=model,
-                list_of_text=[
-                    "prefix Cuisine | I love cheese suffix",
-                    "prefix ML | A transformer is a deep learning architecture suffix",
-                ],
-                batch_size=8,
-                input_type="document",
-            )
-        documents_with_embeddings = result["documents"]
-
-        assert isinstance(documents_with_embeddings, list)
-        assert len(documents_with_embeddings) == len(docs)
-        for doc in documents_with_embeddings:
-            assert isinstance(doc, Document)
-            assert isinstance(doc.embedding, list)
-            assert len(doc.embedding) == 1024
-            assert all(isinstance(x, float) for x in doc.embedding)
-
-    @pytest.mark.unit
-    def test_run_custom_batch_size(self):
-        docs = [
-            Document(content="I love cheese", meta={"topic": "Cuisine"}),
-            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
-        ]
-
-        model = "voyage-01-lite"
-        with patch("voyage_embedders.voyage_document_embedder.get_embeddings") as voyageai_embedding_patch:
-            voyageai_embedding_patch.side_effect = mock_voyageai_response
-            embedder = VoyageDocumentEmbedder(
-                api_key="fake-api-key",
-                model_name=model,
-                prefix="prefix ",
-                suffix=" suffix",
-                metadata_fields_to_embed=["topic"],
-                embedding_separator=" | ",
-                batch_size=1,
-            )
-
-            result = embedder.run(documents=docs)
-
-            assert voyageai_embedding_patch.call_count == 2
-
-        documents_with_embeddings = result["documents"]
-
-        assert isinstance(documents_with_embeddings, list)
-        assert len(documents_with_embeddings) == len(docs)
-        for doc in documents_with_embeddings:
-            assert isinstance(doc, Document)
-            assert isinstance(doc.embedding, list)
-            assert len(doc.embedding) == 1024
-            assert all(isinstance(x, float) for x in doc.embedding)
-
-    @pytest.mark.unit
     def test_run_wrong_input_format(self):
         embedder = VoyageDocumentEmbedder(api_key="fake-api-key")
 
@@ -262,3 +164,33 @@ class TestVoyageDocumentEmbedder:
 
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
+
+    @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
+    @pytest.mark.integration
+    def test_run(self):
+        docs = [
+            Document(content="I love cheese", meta={"topic": "Cuisine"}),
+            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
+        ]
+
+        model = "voyage-lite-02-instruct"
+        embedder = VoyageDocumentEmbedder(
+            model=model,
+            prefix="prefix ",
+            suffix=" suffix",
+            metadata_fields_to_embed=["topic"],
+            embedding_separator=" | ",
+        )
+
+        result = embedder.run(documents=docs)
+
+        documents_with_embeddings = result["documents"]
+
+        assert isinstance(documents_with_embeddings, list)
+        assert len(documents_with_embeddings) == len(docs)
+        for doc in documents_with_embeddings:
+            assert isinstance(doc, Document)
+            assert isinstance(doc.embedding, list)
+            assert len(doc.embedding) == 1024
+            assert all(isinstance(x, float) for x in doc.embedding)
+        assert result["meta"]["total_tokens"] == 24, "Total tokens does not match"
