@@ -7,7 +7,7 @@ text = (
 )
 instruction = "Represent the Amazon comment for classifying the sentence as positive or negative"
 
-text_embedder = VoyageTextEmbedder(model_name="voyage-01", input_type="query")
+text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 
 result = text_embedder.run(text)
 print(f"Embedding: {result['embedding']}")

@@ -34,8 +34,7 @@ document_list = [
 ]
 
 doc_embedder = VoyageDocumentEmbedder(
-    model_name="voyage-01",
-    batch_size=8,
+    model="voyage-2",
 )
 
 result = doc_embedder.run(document_list)
