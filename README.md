@@ -15,12 +15,20 @@
 
 Custom component for [Haystack](https://github.com/deepset-ai/haystack) (2.x) for creating embeddings using the [VoyageAI Embedding Models](https://voyageai.com/).
 
-Voyage’s embedding models, `voyage-01` and `voyage-lite-01`, are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `BAAI-bge` and `OpenAI text-embedding-ada-002` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
+Voyage’s embedding models, `voyage-2` and `voyage-2-code`, are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb). `voyage-2` is current ranked second on the [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
 
 #### What's New
 
+- **[v1.2.0 - 02/02/24]:**
+    - **Breaking Change:** `VoyageDocumentEmbedder` and `VoyageTextEmbedder` now accept the `model` parameter instead of `model_name`.
+    - The embedders have been use the new `voyageai.Client.embed()` method instead of the deprecated `get_embedding` and `get_embeddings` methods of the global namespace.
+    - Support for the new `truncate` parameter has been added.
+    - Default embedding model has been changed to "voyage-2" from the deprecated "voyage-01".
+    - The embedders now return the total number of tokens used as part of the `"total_tokens"` in the metadata.
+
 - **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.
+
 - **[v1.0.0 - 21/11/23]:** Added `VoyageTextEmbedder` and `VoyageDocument Embedder` to embed strings and documents.
 
 
