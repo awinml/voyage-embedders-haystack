@@ -55,6 +55,7 @@ dependencies = [
   "coverage[toml]>=6.5",
   "coveralls",
   "pytest",
+  "datasets",
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
@@ -66,6 +67,15 @@ cov-report = [
 cov = [
   "test-cov",
   "cov-report",
+]
+example-text-embedder = "python examples/text_embedder_example.py"
+example-doc-embedder = "python examples/document_embedder_example.py"
+example-semantic-search = "python examples/semantic_search_pipeline_example.py"
+
+test-examples = [
+  "example-text-embedder",
+  "example-doc-embedder",
+  "example-semantic-search"
 ]
 
 [[tool.hatch.envs.all.matrix]]

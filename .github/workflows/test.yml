@@ -47,6 +47,9 @@ jobs:
     - name: Run tests
       run: hatch run cov
 
+    - name: Run tests-examples
+      run: hatch run test-examples
+
     - name: Coveralls Parallel
       # We upload only coverage for ubuntu as handling both os
       # complicates the workflow too much for little to no gain

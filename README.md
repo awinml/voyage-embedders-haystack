@@ -52,10 +52,10 @@ Load the dataset:
 # Install HuggingFace Datasets using "pip install datasets"
 from datasets import load_dataset
 from haystack import Pipeline
-from haystack.components.retrievers import InMemoryEmbeddingRetriever
+from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.components.writers import DocumentWriter
 from haystack.dataclasses import Document
-from haystack.document_stores import InMemoryDocumentStore
+from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 # Import Voyage Embedders
 from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
@@ -81,9 +81,8 @@ Index the documents to the `InMemoryDocumentStore` using the `VoyageDocumentEmbe
 ```python
 doc_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
 doc_embedder = VoyageDocumentEmbedder(
-    model_name="voyage-01",
+    model="voyage-2",
     input_type="document",
-    batch_size=8,
 )
 
 # Indexing Pipeline
@@ -101,7 +100,7 @@ print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}
 
 Query the Semantic Search Pipeline using the `InMemoryEmbeddingRetriever` and `VoyageTextEmbedder`:
 ```python
-text_embedder = VoyageTextEmbedder(model_name="voyage-01", input_type="query")
+text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 
 # Query Pipeline
 query_pipeline = Pipeline()

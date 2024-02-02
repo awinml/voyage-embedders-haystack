@@ -1,10 +1,10 @@
 # Install HuggingFace Datasets using "pip install datasets"
 from datasets import load_dataset
 from haystack import Pipeline
-from haystack.components.retrievers import InMemoryEmbeddingRetriever as MemoryEmbeddingRetriever
+from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.components.writers import DocumentWriter
 from haystack.dataclasses import Document
-from haystack.document_stores import InMemoryDocumentStore as MemoryDocumentStore
+from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 # Import Voyage Embedders
 from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
@@ -24,13 +24,12 @@ docs = [
     for doc in dataset
 ]
 
-doc_store = MemoryDocumentStore(embedding_similarity_function="cosine")
+doc_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
 doc_embedder = VoyageDocumentEmbedder(
-    model_name="voyage-01",
+    model="voyage-2",
     input_type="document",
-    batch_size=8,
 )
-text_embedder = VoyageTextEmbedder(model_name="voyage-01", input_type="query")
+text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 
 # Indexing Pipeline
 indexing_pipeline = Pipeline()
@@ -48,8 +47,8 @@ print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}
 # Query Pipeline
 query_pipeline = Pipeline()
 query_pipeline.add_component("TextEmbedder", text_embedder)
-query_pipeline.add_component("Retriever", MemoryEmbeddingRetriever(document_store=doc_store))
-query_pipeline.connect("TextEmbedder", "Retriever")
+query_pipeline.add_component("Retriever", InMemoryEmbeddingRetriever(document_store=doc_store))
+query_pipeline.connect("TextEmbedder.embedding", "Retriever.query_embedding")
 
 
 # Search
