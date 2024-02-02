@@ -33,10 +33,10 @@ classifiers = [
 ]
 
 dependencies = [
-  "haystack-ai==2.0.0b5",
+  "haystack-ai",
   "typing_extensions",
   "numpy",
-  "voyageai==0.1.7"
+  "voyageai"
 ]
 
 [project.urls]
