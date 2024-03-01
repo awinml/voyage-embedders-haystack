@@ -88,16 +88,20 @@ Index the documents to the `InMemoryDocumentStore` using the `VoyageDocumentEmbe
 
 ```python
 doc_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
+retriever = InMemoryEmbeddingRetriever(document_store=doc_store)
+doc_writer = DocumentWriter(document_store=doc_store)
+
 doc_embedder = VoyageDocumentEmbedder(
     model="voyage-2",
     input_type="document",
 )
+text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 
 # Indexing Pipeline
 indexing_pipeline = Pipeline()
 indexing_pipeline.add_component(instance=doc_embedder, name="DocEmbedder")
-indexing_pipeline.add_component(instance=DocumentWriter(document_store=doc_store), name="DocWriter")
-indexing_pipeline.connect(connect_from="DocEmbedder", connect_to="DocWriter")
+indexing_pipeline.add_component(instance=doc_writer, name="DocWriter")
+indexing_pipeline.connect(sender="DocEmbedder", receiver="DocWriter")
 
 indexing_pipeline.run({"DocEmbedder": {"documents": docs}})
 
@@ -112,9 +116,9 @@ text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 
 # Query Pipeline
 query_pipeline = Pipeline()
-query_pipeline.add_component("TextEmbedder", text_embedder)
-query_pipeline.add_component("Retriever", InMemoryEmbeddingRetriever(document_store=doc_store))
-query_pipeline.connect("TextEmbedder", "Retriever")
+query_pipeline.add_component(instance=text_embedder, name="TextEmbedder")
+query_pipeline.add_component(instance=retriever, name="Retriever")
+query_pipeline.connect("TextEmbedder.embedding", "Retriever.query_embedding")
 
 
 # Search
@@ -128,8 +132,7 @@ print(top_result)
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
+Pull requests are welcome. For major changes, please open an issue first.
 
 ## Author
 
