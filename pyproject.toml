@@ -10,12 +10,8 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = "Apache-2.0"
 keywords = ["Haystack", "VoyageAI"]
-authors = [
-  { name = "Ashwin Mathur", email = "" },
-]
-maintainers = [
-  { name = "Ashwin Mathur", email = "" },
-]
+authors = [{ name = "Ashwin Mathur", email = "" }]
+maintainers = [{ name = "Ashwin Mathur", email = "" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
@@ -32,12 +28,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
-dependencies = [
-  "haystack-ai",
-  "typing_extensions",
-  "numpy",
-  "voyageai"
-]
+dependencies = ["haystack-ai", "typing_extensions", "numpy", "voyageai"]
 
 [project.urls]
 Documentation = "https://github.com/awinml/voyage-embedders-haystack#readme"
@@ -51,23 +42,13 @@ packages = ["src/voyage_embedders"]
 path = "src/voyage_embedders/__about__.py"
 
 [tool.hatch.envs.default]
-dependencies = [
-  "coverage[toml]>=6.5",
-  "coveralls",
-  "pytest",
-  "datasets",
-]
+dependencies = ["coverage[toml]>=6.5", "coveralls", "pytest", "datasets"]
+
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
-cov-report = [
-  "- coverage combine",
-  "coverage xml",
-]
-cov = [
-  "test-cov",
-  "cov-report",
-]
+cov-report = ["- coverage combine", "coverage xml"]
+cov = ["test-cov", "cov-report"]
 example-text-embedder = "python examples/text_embedder_example.py"
 example-doc-embedder = "python examples/document_embedder_example.py"
 example-semantic-search = "python examples/semantic_search_pipeline_example.py"
@@ -75,7 +56,7 @@ example-semantic-search = "python examples/semantic_search_pipeline_example.py"
 test-examples = [
   "example-text-embedder",
   "example-doc-embedder",
-  "example-semantic-search"
+  "example-semantic-search",
 ]
 
 [[tool.hatch.envs.all.matrix]]
@@ -83,26 +64,12 @@ python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.lint]
 detached = true
-dependencies = [
-  "black>=23.1.0",
-  "mypy>=1.0.0",
-  "ruff>=0.0.243",
-]
+dependencies = ["black>=23.1.0", "mypy>=1.0.0", "ruff>=0.0.243"]
 [tool.hatch.envs.lint.scripts]
 typing = "mypy --install-types --non-interactive {args:src/voyage_embedders tests}"
-style = [
-  "ruff {args:.}",
-  "black --check --diff {args:.}",
-]
-fmt = [
-  "black {args:.}",
-  "ruff --fix {args:.}",
-  "style",
-]
-all = [
-  "fmt",
-  "typing",
-]
+style = ["ruff {args:.}", "black --check --diff {args:.}"]
+fmt = ["black {args:.}", "ruff --fix {args:.}", "style"]
+all = ["fmt", "typing"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
@@ -148,11 +115,17 @@ ignore = [
   # Allow boolean positional values in function calls, like `dict.get(... True)`
   "FBT003",
   # Ignore checks for possible passwords
-  "S105", "S106", "S107",
+  "S105",
+  "S106",
+  "S107",
   # Ignore complexity
-  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+  "C901",
+  "PLR0911",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
   # Ignore print statements
-  "T201"
+  "T201",
 ]
 unfixable = [
   # Don't touch unused imports
@@ -173,36 +146,26 @@ ban-relative-imports = "all"
 source_pkgs = ["voyage_embedders", "tests"]
 branch = true
 parallel = true
-omit = [
-  "src/voyage_embedders/__about__.py",
-  "example"
-]
+omit = ["src/voyage_embedders/__about__.py", "example"]
 
 [tool.coverage.paths]
-voyage_embedders = ["src/voyage_embedders", "*/voyage_embedders/src/voyage_embedders"]
+voyage_embedders = [
+  "src/voyage_embedders",
+  "*/voyage_embedders/src/voyage_embedders",
+]
 tests = ["tests", "*voyage_embedders/tests"]
 
 [tool.coverage.report]
-exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
-]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-vv"
-markers = [
-  "unit: unit tests",
-  "integration: integration tests"
-]
+markers = ["unit: unit tests", "integration: integration tests"]
 
 [tool.mypy]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = [
-  "haystack.*",
-  "pytest.*"
-]
+module = ["haystack.*", "pytest.*"]
 ignore_missing_imports = true
