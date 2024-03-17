@@ -78,6 +78,39 @@ class TestVoyageDocumentEmbedder:
         }
 
     @pytest.mark.unit
+    def test_from_dict(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        data = {
+            "type": "haystack_integrations.components.embedders.voyage_embedders.voyage_document_embedder."
+            "VoyageDocumentEmbedder",
+            "init_parameters": {
+                "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
+                "model": "voyage-2",
+                "input_type": "document",
+                "truncate": None,
+                "prefix": "",
+                "suffix": "",
+                "batch_size": 32,
+                "progress_bar": True,
+                "metadata_fields_to_embed": [],
+                "embedding_separator": "\n",
+            },
+        }
+
+        embedder = VoyageDocumentEmbedder.from_dict(data)
+
+        assert embedder.client.api_key == "fake-api-key"
+        assert embedder.model == "voyage-2"
+        assert embedder.input_type == "document"
+        assert embedder.truncate is None
+        assert embedder.prefix == ""
+        assert embedder.suffix == ""
+        assert embedder.batch_size == 32
+        assert embedder.progress_bar is True
+        assert embedder.metadata_fields_to_embed == []
+        assert embedder.embedding_separator == "\n"
+
+    @pytest.mark.unit
     def test_to_dict_with_custom_init_parameters(self, monkeypatch):
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         component = VoyageDocumentEmbedder(
@@ -109,6 +142,39 @@ class TestVoyageDocumentEmbedder:
                 "embedding_separator": " | ",
             },
         }
+
+    @pytest.mark.unit
+    def test_from_dict_with_custom_init_parameters(self, monkeypatch):
+        monkeypatch.setenv("ENV_VAR", "fake-api-key")
+        data = {
+            "type": "haystack_integrations.components.embedders.voyage_embedders.voyage_document_embedder."
+            "VoyageDocumentEmbedder",
+            "init_parameters": {
+                "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
+                "model": "model",
+                "input_type": "query",
+                "truncate": True,
+                "prefix": "prefix",
+                "suffix": "suffix",
+                "batch_size": 4,
+                "progress_bar": False,
+                "metadata_fields_to_embed": ["test_field"],
+                "embedding_separator": " | ",
+            },
+        }
+
+        embedder = VoyageDocumentEmbedder.from_dict(data)
+
+        assert embedder.client.api_key == "fake-api-key"
+        assert embedder.model == "model"
+        assert embedder.input_type == "query"
+        assert embedder.truncate is True
+        assert embedder.prefix == "prefix"
+        assert embedder.suffix == "suffix"
+        assert embedder.batch_size == 4
+        assert embedder.progress_bar is False
+        assert embedder.metadata_fields_to_embed == ["test_field"]
+        assert embedder.embedding_separator == " | "
 
     @pytest.mark.unit
     def test_prepare_texts_to_embed_w_metadata(self):
