@@ -176,4 +176,5 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["haystack.*", "haystack_integrations.*", "pytest.*"]
+module = ["haystack.*", "pytest.*"]
 ignore_missing_imports = true
