@@ -1,5 +1,4 @@
 from haystack.dataclasses import Document
-
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder
 
 # Text taken from PubMed QA Dataset (https://huggingface.co/datasets/pubmed_qa)

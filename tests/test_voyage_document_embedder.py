@@ -3,7 +3,6 @@ import os
 import pytest
 from haystack import Document
 from haystack.utils.auth import Secret
-
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder
 
 
