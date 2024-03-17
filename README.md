@@ -1,15 +1,13 @@
-[![PyPI](https://img.shields.io/pypi/v/voyage-embedders-haystack)](https://pypi.org/project/voyage-embedders-haystack/) 
-![PyPI - Downloads](https://img.shields.io/pypi/dm/voyage-embedders-haystack?color=blue&logo=pypi&logoColor=gold) 
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/voyage-embedders-haystack?logo=python&logoColor=gold) 
-[![GitHub](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE) 
+[![PyPI](https://img.shields.io/pypi/v/voyage-embedders-haystack)](https://pypi.org/project/voyage-embedders-haystack/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/voyage-embedders-haystack?color=blue&logo=pypi&logoColor=gold)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/voyage-embedders-haystack?logo=python&logoColor=gold)
+[![GitHub](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE)
 [![Actions status](https://github.com/awinml/voyage-embedders-haystack/workflows/Test/badge.svg)](https://github.com/awinml/voyage-embedders-haystack/actions)
 [![Coverage Status](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)
 
-[![Types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy) 
+[![Types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Code Style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) 
-
-
+[![Code Style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 <h1 align="center"> <a href="https://github.com/awinml/voyage-embedders-haystack"> Voyage Embedders - Haystack </a> </h1>
 
@@ -17,20 +15,25 @@ Custom component for [Haystack](https://github.com/deepset-ai/haystack) (2.x) fo
 
 Voyage’s embedding models, `voyage-2` and `voyage-2-code`, are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb). `voyage-2` is current ranked second on the [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
 
-
 #### What's New
 
+- **[v1.3.0 - 18/03/24]:**
+
+  - **Breaking Change:** The import path for the embedders has been changed to `haystack_integrations.components.embedders.voyage_embedders`.
+    Please replace all instances of `from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder` and `from voyage_embedders.voyage_text_embedder import VoyageTextEmbedder` with `from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder, VoyageTextEmbedder`.
+  - The embedders now use the Haystack `Secret` API for authentication. For more information please see the [Secret Management Documentation.](https://docs.haystack.deepset.ai/docs/secret-management).
+
 - **[v1.2.0 - 02/02/24]:**
-    - **Breaking Change:** `VoyageDocumentEmbedder` and `VoyageTextEmbedder` now accept the `model` parameter instead of `model_name`.
-    - The embedders have been use the new `voyageai.Client.embed()` method instead of the deprecated `get_embedding` and `get_embeddings` methods of the global namespace.
-    - Support for the new `truncate` parameter has been added.
-    - Default embedding model has been changed to "voyage-2" from the deprecated "voyage-01".
-    - The embedders now return the total number of tokens used as part of the `"total_tokens"` in the metadata.
+
+  - **Breaking Change:** `VoyageDocumentEmbedder` and `VoyageTextEmbedder` now accept the `model` parameter instead of `model_name`.
+  - The embedders have been use the new `voyageai.Client.embed()` method instead of the deprecated `get_embedding` and `get_embeddings` methods of the global namespace.
+  - Support for the new `truncate` parameter has been added.
+  - Default embedding model has been changed to "voyage-2" from the deprecated "voyage-01".
+  - The embedders now return the total number of tokens used as part of the `"total_tokens"` in the metadata.
 
 - **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.
 
 - **[v1.0.0 - 21/11/23]:** Added `VoyageTextEmbedder` and `VoyageDocument Embedder` to embed strings and documents.
-
 
 ## Installation
 
@@ -49,10 +52,9 @@ Information about the supported models, can be found on the [Embeddings Document
 
 To get an API key, please see the [Voyage AI website.](https://www.voyageai.com/)
 
-
 ## Example
 
-Below is the example Semantic Search pipeline that uses the [Simple Wikipedia](https://huggingface.co/datasets/pszemraj/simple_wikipedia) Dataset from HuggingFace. You can find more examples in the [`examples`](https://github.com/awinml/voyage-embedders-haystack/tree/main/examples) folder.  
+Below is the example Semantic Search pipeline that uses the [Simple Wikipedia](https://huggingface.co/datasets/pszemraj/simple_wikipedia) Dataset from HuggingFace. You can find more examples in the [`examples`](https://github.com/awinml/voyage-embedders-haystack/tree/main/examples) folder.
 
 Load the dataset:
 
@@ -66,8 +68,7 @@ from haystack.dataclasses import Document
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 # Import Voyage Embedders
-from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
-from voyage_embedders.voyage_text_embedder import VoyageTextEmbedder
+from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder, VoyageTextEmbedder
 
 # Load first 100 rows of the Simple Wikipedia Dataset from HuggingFace
 dataset = load_dataset("pszemraj/simple_wikipedia", split="validation[:100]")
@@ -97,7 +98,7 @@ doc_embedder = VoyageDocumentEmbedder(
 indexing_pipeline = Pipeline()
 indexing_pipeline.add_component(instance=doc_embedder, name="DocEmbedder")
 indexing_pipeline.add_component(instance=DocumentWriter(document_store=doc_store), name="DocWriter")
-indexing_pipeline.connect(connect_from="DocEmbedder", connect_to="DocWriter")
+indexing_pipeline.connect("DocEmbedder", "DocWriter")
 
 indexing_pipeline.run({"DocEmbedder": {"documents": docs}})
 
@@ -107,6 +108,7 @@ print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}
 ```
 
 Query the Semantic Search Pipeline using the `InMemoryEmbeddingRetriever` and `VoyageTextEmbedder`:
+
 ```python
 text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 
@@ -114,7 +116,7 @@ text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
 query_pipeline = Pipeline()
 query_pipeline.add_component("TextEmbedder", text_embedder)
 query_pipeline.add_component("Retriever", InMemoryEmbeddingRetriever(document_store=doc_store))
-query_pipeline.connect("TextEmbedder", "Retriever")
+query_pipeline.connect("TextEmbedder.embedding", "Retriever.query_embedding")
 
 
 # Search

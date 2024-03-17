@@ -1,9 +1,7 @@
-import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from haystack.core.component import component
-from haystack.core.serialization import default_to_dict
-from haystack.dataclasses import Document
+from haystack import Document, component, default_from_dict, default_to_dict
+from haystack.utils import Secret, deserialize_secrets_inplace
 from tqdm import tqdm
 from voyageai import Client
 
@@ -16,10 +14,10 @@ class VoyageDocumentEmbedder:
 
     Usage example:
     ```python
-    from haystack.preview import Document
-    from haystack.preview.components.embedders import VoyageDocumentEmbedder
+    from haystack import Document
+    from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder
 
-    doc = Document(text="I love pizza!")
+    doc = Document(content="I love pizza!")
 
     document_embedder = VoyageDocumentEmbedder()
 
@@ -32,7 +30,7 @@ class VoyageDocumentEmbedder:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
         model: str = "voyage-2",
         input_type: str = "document",
         truncate: Optional[bool] = None,
@@ -45,42 +43,43 @@ class VoyageDocumentEmbedder:
     ):
         """
         Create a VoyageDocumentEmbedder component.
-        :param api_key: The VoyageAI API key. It can be explicitly provided or automatically read from the
-                        environment variable VOYAGE_API_KEY (recommended).
-        :param model: The name of the model to use. Defaults to "voyage-2".
-        For more details on the available models,
+
+        :param api_key:
+            The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
+            VOYAGE_API_KEY (recommended).
+        :param model:
+            The name of the model to use. Defaults to "voyage-2".
+            For more details on the available models,
             see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
-        :param input_type: Type of the input text. This is used to prepend different prompts to the text.
+        :param input_type:
+            Type of the input text. This is used to prepend different prompts to the text.
             - Defaults to `"document"`. This will prepend the text with, "Represent the document for retrieval: ".
             - Can be set to `"query"`. For query, the prompt is "Represent the query for retrieving
               supporting documents: ".
             - Can be set to `None` for no prompt.
-        :param truncate: Whether to truncate the input texts to fit within the context length.
+        :param truncate:
+            Whether to truncate the input texts to fit within the context length.
             - If `True`, over-length input texts will be truncated to fit within the context length, before vectorized
               by the embedding model.
             - If False, an error will be raised if any given text exceeds the context length.
             - Defaults to `None`, which will truncate the input text before sending it to the embedding model if it
               slightly exceeds the context window length. If it significantly exceeds the context window length, an
               error will be raised.
-        :param prefix: A string to add to the beginning of each text.
-        :param suffix: A string to add to the end of each text.
-        :param batch_size: Number of Documents to encode at once.
-        :param metadata_fields_to_embed: List of meta fields that should be embedded along with the Document text.
-        :param embedding_separator: Separator used to concatenate the meta fields to the Document text.
-        :param progress_bar: Whether to show a progress bar or not. Can be helpful to disable in production deployments
-                             to keep the logs clean.
+        :param prefix:
+            A string to add to the beginning of each text.
+        :param suffix:
+            A string to add to the end of each text.
+        :param batch_size:
+            Number of Documents to encode at once.
+        :param metadata_fields_to_embed:
+            List of meta fields that should be embedded along with the Document text.
+        :param embedding_separator:
+            Separator used to concatenate the meta fields to the Document text.
+        :param progress_bar:
+            Whether to show a progress bar or not. Can be helpful to disable in production deployments to keep the logs
+            clean.
         """
-        if api_key is None:
-            try:
-                api_key = os.environ["VOYAGE_API_KEY"]
-            except KeyError as e:
-                msg = (
-                    "VoyageDocumentEmbedder expects an VoyageAI API key. "
-                    "Set the VOYAGE_API_KEY environment variable (recommended) or pass it explicitly."
-                )
-                raise ValueError(msg) from e
-
-        self.client = Client(api_key=api_key)
+        self.api_key = api_key
         self.model = model
         self.input_type = input_type
         self.truncate = truncate
@@ -91,10 +90,14 @@ class VoyageDocumentEmbedder:
         self.metadata_fields_to_embed = metadata_fields_to_embed or []
         self.embedding_separator = embedding_separator
 
+        self.client = Client(api_key=api_key.resolve_value())
+
     def to_dict(self) -> Dict[str, Any]:
         """
-        This method overrides the default serializer in order to avoid leaking the `api_key` value passed
-        to the constructor.
+        Serializes the component to a dictionary.
+
+        :returns:
+            Dictionary with serialized data.
         """
         return default_to_dict(
             self,
@@ -107,7 +110,21 @@ class VoyageDocumentEmbedder:
             progress_bar=self.progress_bar,
             metadata_fields_to_embed=self.metadata_fields_to_embed,
             embedding_separator=self.embedding_separator,
+            api_key=self.api_key.to_dict(),
         )
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "VoyageDocumentEmbedder":
+        """
+        Deserializes the component from a dictionary.
+
+        :param data:
+            Dictionary to deserialize from.
+        :returns:
+            Deserialized component.
+        """
+        deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
+        return default_from_dict(cls, data)
 
     def _prepare_texts_to_embed(self, documents: List[Document]) -> List[str]:
         """
@@ -155,9 +172,14 @@ class VoyageDocumentEmbedder:
     def run(self, documents: List[Document]):
         """
         Embed a list of Documents.
-        The embedding of each Document is stored in the `embedding` field of the Document.
 
-        :param documents: A list of Documents to embed.
+        :param documents:
+            Documents to embed.
+
+        :returns:
+            A dictionary with the following keys:
+            - `documents`: Documents with embeddings
+            - `meta`: Information about the usage of the model.
         """
         if not isinstance(documents, list) or documents and not isinstance(documents[0], Document):
             msg = (

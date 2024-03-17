@@ -1,6 +1,6 @@
 from haystack.dataclasses import Document
 
-from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder
+from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder
 
 # Text taken from PubMed QA Dataset (https://huggingface.co/datasets/pubmed_qa)
 document_list = [

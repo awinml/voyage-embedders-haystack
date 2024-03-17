@@ -1,4 +1,4 @@
-from voyage_embedders.voyage_text_embedder import VoyageTextEmbedder
+from haystack_integrations.components.embedders.voyage_embedders import VoyageTextEmbedder
 
 # Example text from the Amazon Reviews Polarity Dataset (https://huggingface.co/datasets/amazon_polarity)
 text = (
