@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional
 
 from haystack import component, default_from_dict, default_to_dict
@@ -32,6 +33,8 @@ class VoyageTextEmbedder:
         truncate: Optional[bool] = None,
         prefix: str = "",
         suffix: str = "",
+        timeout: Optional[int] = None,
+        max_retries: Optional[int] = None,
     ):
         """
         Create an VoyageTextEmbedder component.
@@ -62,6 +65,12 @@ class VoyageTextEmbedder:
             A string to add to the beginning of each text.
         :param suffix:
             A string to add to the end of each text.
+        :param timeout:
+            Timeout for VoyageAI Client calls, if not set it is inferred from the `VOYAGE_TIMEOUT` environment variable
+            or set to 30.
+        :param max_retries:
+            Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
+            inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
         """
         self.api_key = api_key
         self.model = model
@@ -70,7 +79,12 @@ class VoyageTextEmbedder:
         self.prefix = prefix
         self.suffix = suffix
 
-        self.client = Client(api_key=api_key.resolve_value())
+        if timeout is None:
+            timeout = int(os.environ.get("VOYAGE_TIMEOUT", 30))
+        if max_retries is None:
+            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", 5))
+
+        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
     def to_dict(self) -> Dict[str, Any]:
         """
