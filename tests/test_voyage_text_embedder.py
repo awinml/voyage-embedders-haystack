@@ -135,7 +135,7 @@ class TestVoyageTextEmbedder:
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     def test_run(self):
-        model = "voyage-lite-02-instruct"
+        model = "voyage-large-2-instruct"
 
         embedder = VoyageTextEmbedder(model=model, prefix="prefix ", suffix=" suffix")
         result = embedder.run(text="The food was delicious")

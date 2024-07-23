@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional, Tuple
 
 from haystack import Document, component, default_from_dict, default_to_dict
@@ -40,6 +41,8 @@ class VoyageDocumentEmbedder:
         metadata_fields_to_embed: Optional[List[str]] = None,
         embedding_separator: str = "\n",
         progress_bar: bool = True,  # noqa
+        timeout: Optional[int] = None,
+        max_retries: Optional[int] = None,
     ):
         """
         Create a VoyageDocumentEmbedder component.
@@ -78,6 +81,12 @@ class VoyageDocumentEmbedder:
         :param progress_bar:
             Whether to show a progress bar or not. Can be helpful to disable in production deployments to keep the logs
             clean.
+        :param timeout:
+            Timeout for VoyageAI Client calls, if not set it is inferred from the `VOYAGE_TIMEOUT` environment variable
+            or set to 30.
+        :param max_retries:
+            Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
+            inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
         """
         self.api_key = api_key
         self.model = model
@@ -90,7 +99,12 @@ class VoyageDocumentEmbedder:
         self.metadata_fields_to_embed = metadata_fields_to_embed or []
         self.embedding_separator = embedding_separator
 
-        self.client = Client(api_key=api_key.resolve_value())
+        if timeout is None:
+            timeout = int(os.environ.get("VOYAGE_TIMEOUT", 30))
+        if max_retries is None:
+            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", 5))
+
+        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
     def to_dict(self) -> Dict[str, Any]:
         """

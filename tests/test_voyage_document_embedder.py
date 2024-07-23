@@ -247,7 +247,7 @@ class TestVoyageDocumentEmbedder:
             Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
         ]
 
-        model = "voyage-lite-02-instruct"
+        model = "voyage-large-2-instruct"
         embedder = VoyageDocumentEmbedder(
             model=model,
             prefix="prefix ",

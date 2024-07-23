@@ -17,6 +17,10 @@ Voyage’s embedding models, `voyage-2` and `voyage-2-code`, are state-of-the-ar
 
 #### What's New
 
+- **[v1.4.0 - 24/07/24]:**
+
+  - The maximum timeout and number of retries made by the Client can now be set for the embedders using the `timeout` and `max_retries` parameters.
+
 - **[v1.3.0 - 18/03/24]:**
 
   - **Breaking Change:** The import path for the embedders has been changed to `haystack_integrations.components.embedders.voyage_embedders`.
