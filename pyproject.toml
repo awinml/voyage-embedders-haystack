@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "voyage-embedders-haystack"
-dynamic = ["version"]
+version = "0.0.5"
 description = 'Haystack 2.x component to embed strings and Documents using VoyageAI Embedding models.'
 readme = "README.md"
 requires-python = ">=3.9"
@@ -36,9 +36,6 @@ Source = "https://github.com/awinml/voyage-embedders-haystack"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/haystack_integrations"]
-
-[tool.hatch.version]
-path = "src/haystack_integrations/components/embedders/voyage_embedders/__about__.py"
 
 [tool.hatch.envs.default]
 dependencies = ["coverage[toml]>=6.5", "coveralls", "pytest", "datasets"]
