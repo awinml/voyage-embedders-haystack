@@ -1,5 +1,5 @@
 from haystack import Document
-from haystack_integrations.components.rerankers.voyage_rerankers.voyage_text_reranker import VoyageRanker
+from haystack_integrations.components.rankers.voyage.voyage_text_reranker import VoyageRanker
 
 ranker = VoyageRanker(model="rerank-2", top_k=2)
 

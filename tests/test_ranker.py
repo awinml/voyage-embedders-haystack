@@ -5,7 +5,7 @@ from haystack import Document
 from haystack.utils.auth import Secret
 from voyageai.error import InvalidRequestError
 
-from haystack_integrations.components.rerankers.voyage_rerankers import VoyageRanker
+from haystack_integrations.components.rankers.voyage import VoyageRanker
 
 
 class TestVoyageTextReranker:
@@ -56,7 +56,7 @@ class TestVoyageTextReranker:
         component = VoyageRanker()
         data = component.to_dict()
         assert data == {
-            "type": "haystack_integrations.components.rerankers.voyage_rerankers.voyage_text_reranker."
+            "type": "haystack_integrations.components.rankers.voyage.ranker."
             "VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
@@ -74,7 +74,7 @@ class TestVoyageTextReranker:
     def test_from_dict(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         data = {
-            "type": "haystack_integrations.components.rerankers.voyage_rerankers.voyage_text_reranker."
+            "type": "haystack_integrations.components.rankers.voyage.ranker."
             "VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
@@ -111,7 +111,7 @@ class TestVoyageTextReranker:
         )
         data = component.to_dict()
         assert data == {
-            "type": "haystack_integrations.components.rerankers.voyage_rerankers.voyage_text_reranker."
+            "type": "haystack_integrations.components.rankers.voyage.ranker."
             "VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
@@ -130,7 +130,7 @@ class TestVoyageTextReranker:
     def test_from_dict_with_custom_init_parameters(self, monkeypatch):
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         data = {
-            "type": "haystack_integrations.components.rerankers.voyage_rerankers.voyage_text_reranker."
+            "type": "haystack_integrations.components.rankers.voyage.ranker."
             "VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
