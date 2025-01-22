@@ -9,13 +9,18 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Code Style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-<h1 align="center"> <a href="https://github.com/awinml/voyage-embedders-haystack"> Voyage Embedders - Haystack </a> </h1>
+<h1 align="center"> <a href="https://github.com/awinml/voyage-embedders-haystack"> Voyage Embedders and Rankers - Haystack </a> </h1>
 
-Custom component for [Haystack](https://github.com/deepset-ai/haystack) (2.x) for creating embeddings using the [VoyageAI Embedding Models](https://voyageai.com/).
+Custom components for [Haystack](https://github.com/deepset-ai/haystack) for creating embeddings and reranking documents using the [Voyage Models](https://voyageai.com/).
 
-Voyage’s embedding models, `voyage-2` and `voyage-2-code`, are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb). `voyage-2` is current ranked second on the [MTEB Leaderboard](https://huggingface.co/spaces/mteb/leaderboard).
+Voyage’s embedding models are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
 #### What's New
+
+- **[v1.5.0 - 22/01/25]:**
+
+  - The new `VoyageRanker` component can be used to rerank documents using the `Voyage Reranker` models.
+  - Matryoshka Embeddings and Quantized Embeddings can now be created using the `output_dimension` and `output_dtype` parameters.
 
 - **[v1.4.0 - 24/07/24]:**
 
@@ -50,18 +55,21 @@ pip install voyage-embedders-haystack
 
 You can use Voyage Embedding models with two components: [VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py) and [VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py).
 
-To create semantic embeddings for documents, use `VoyageDocumentEmbedder` in your indexing pipeline. For generating embeddings for queries, use `VoyageTextEmbedder`. 
+To create semantic embeddings for documents, use `VoyageDocumentEmbedder` in your indexing pipeline. For generating embeddings for queries, use `VoyageTextEmbedder`.
+
+The Voyage Reranker models can be used with the [VoyageRanker](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/rankers/voyage/ranker.py) component.
 
 Once you've selected the suitable component for your specific use case, initialize the component with the model name and VoyageAI API key. You can also
 set the environment variable `VOYAGE_API_KEY` instead of passing the API key as an argument.
-
-Information about the supported models, can be found on the [Embeddings Documentation.](https://docs.voyageai.com/embeddings/)
-
 To get an API key, please see the [Voyage AI website.](https://www.voyageai.com/)
+
+Information about the supported models, can be found on the [Voyage AI Documentation.](https://docs.voyageai.com/)
 
 ## Example
 
-Below is the example Semantic Search pipeline that uses the [Simple Wikipedia](https://huggingface.co/datasets/pszemraj/simple_wikipedia) Dataset from HuggingFace. You can find more examples in the [`examples`](https://github.com/awinml/voyage-embedders-haystack/tree/main/examples) folder.
+You can find all the examples in the [`examples`](https://github.com/awinml/voyage-embedders-haystack/tree/main/examples) folder.
+
+Below is the example Semantic Search pipeline that uses the [Simple Wikipedia](https://huggingface.co/datasets/pszemraj/simple_wikipedia) Dataset from HuggingFace.
 
 Load the dataset:
 
