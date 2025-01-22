@@ -128,6 +128,9 @@ lint.ignore = [
   "T201",
   # Ignore function call in argument default - for secrets
   "B008",
+  # Ignore Boolean positionals in function calls
+  "FBT001",
+  "FBT002",
 ]
 lint.unfixable = [
   # Don't touch unused imports

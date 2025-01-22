@@ -1,4 +1,5 @@
 from haystack.dataclasses import Document
+
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder
 
 # Text taken from PubMed QA Dataset (https://huggingface.co/datasets/pubmed_qa)
@@ -33,7 +34,9 @@ document_list = [
 ]
 
 doc_embedder = VoyageDocumentEmbedder(
-    model="voyage-2",
+    model="voyage-3",
+    timeout=600,
+    max_retries=1200,
 )
 
 result = doc_embedder.run(document_list)

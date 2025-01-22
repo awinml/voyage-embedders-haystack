@@ -32,15 +32,17 @@ class VoyageDocumentEmbedder:
     def __init__(
         self,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        model: str = "voyage-2",
-        input_type: str = "document",
-        truncate: Optional[bool] = None,
+        model: str = "voyage-3",
+        input_type: Optional[str] = None,
+        truncate: bool = True,
         prefix: str = "",
         suffix: str = "",
+        output_dimension: Optional[int] = None,
+        output_dtype: str = "float",
         batch_size: int = 32,
         metadata_fields_to_embed: Optional[List[str]] = None,
         embedding_separator: str = "\n",
-        progress_bar: bool = True,  # noqa
+        progress_bar: bool = True,
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
     ):
@@ -51,23 +53,35 @@ class VoyageDocumentEmbedder:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
         :param model:
-            The name of the model to use. Defaults to "voyage-2".
+            The name of the model to use. Defaults to "voyage-3".
             For more details on the available models,
             see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
         :param input_type:
-            Type of the input text. This is used to prepend different prompts to the text.
-            - Defaults to `"document"`. This will prepend the text with, "Represent the document for retrieval: ".
-            - Can be set to `"query"`. For query, the prompt is "Represent the query for retrieving
-              supporting documents: ".
-            - Can be set to `None` for no prompt.
+            Type of the input text. This is used to prepend different prompts to the text. For retrieval/search
+            purposes, where a "query" is used to search for relevant information among a collection of data, referred
+            to as "documents", it is recommended to specify whether your inputs (texts) are intended as queries or
+            documents by setting `input_type` to `"query"` or `"document"` , respectively.
+            - Defaults to `None`. This means the embedding model directly converts the inputs (texts) into numerical
+                vectors. No prompt is added.
+            - Can be set to `"query"`. This will prepend the text with, "Represent the query for retrieving
+                supporting documents: ".
+            - Can be set to `"document"`. For document, the prompt is "Represent the document for retrieval: ".
         :param truncate:
-            Whether to truncate the input texts to fit within the context length.
+            Whether to truncate the input texts to fit within the context length. Defaults to `True`.
             - If `True`, over-length input texts will be truncated to fit within the context length, before vectorized
-              by the embedding model.
-            - If False, an error will be raised if any given text exceeds the context length.
-            - Defaults to `None`, which will truncate the input text before sending it to the embedding model if it
-              slightly exceeds the context window length. If it significantly exceeds the context window length, an
-              error will be raised.
+                by the embedding model.
+            - If `False`, an error will be raised if any given text exceeds the context length.
+        :param output_dimension:
+            The dimension of the output embedding. Defaults to `None`.
+            - Most models only support a single default dimension, used when `output_dimension` is set to `None` (see
+            [model embedding dimensions](https://docs.voyageai.com/docs/embeddings#model-choices) for more details).
+            - `voyage-3-large` and `voyage-code-3` support the following `output_dimension` values: 2048,
+            1024 (default), 512, and 256.
+        :param output_dtype: The data type for the embeddings to be returned. Defaults to `"float"`.
+            Options: "float", "int8", "uint8", "binary", "ubinary". "float" is supported for all models.
+            "int8", "uint8", "binary", and "ubinary" are supported by voyage-3-large and voyage-code-3.
+            Please see the [FAQ](https://docs.voyageai.com/docs/faq#what-is-quantization-and-output-data-types) for
+            more details about output data types.
         :param prefix:
             A string to add to the beginning of each text.
         :param suffix:
@@ -94,6 +108,8 @@ class VoyageDocumentEmbedder:
         self.truncate = truncate
         self.prefix = prefix
         self.suffix = suffix
+        self.output_dimension = output_dimension
+        self.output_dtype = output_dtype
         self.batch_size = batch_size
         self.progress_bar = progress_bar
         self.metadata_fields_to_embed = metadata_fields_to_embed or []
@@ -120,6 +136,8 @@ class VoyageDocumentEmbedder:
             truncate=self.truncate,
             prefix=self.prefix,
             suffix=self.suffix,
+            output_dimension=self.output_dimension,
+            output_dtype=self.output_dtype,
             batch_size=self.batch_size,
             progress_bar=self.progress_bar,
             metadata_fields_to_embed=self.metadata_fields_to_embed,
@@ -176,6 +194,8 @@ class VoyageDocumentEmbedder:
                 model=self.model,
                 input_type=self.input_type,
                 truncation=self.truncate,
+                output_dtype=self.output_dtype,
+                output_dimension=self.output_dimension,
             )
             all_embeddings.extend(response.embeddings)
             meta["total_tokens"] += response.total_tokens
@@ -195,7 +215,7 @@ class VoyageDocumentEmbedder:
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model.
         """
-        if not isinstance(documents, list) or documents and not isinstance(documents[0], Document):
+        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
             msg = (
                 "VoyageDocumentEmbedder expects a list of Documents as input."
                 " In case you want to embed a string, please use the VoyageTextEmbedder."
