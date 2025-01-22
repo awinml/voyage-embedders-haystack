@@ -3,6 +3,7 @@ import os
 import pytest
 from haystack import Document
 from haystack.utils.auth import Secret
+
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder
 
 
@@ -13,11 +14,13 @@ class TestVoyageDocumentEmbedder:
         embedder = VoyageDocumentEmbedder()
 
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "voyage-2"
-        assert embedder.input_type == "document"
-        assert embedder.truncate is None
+        assert embedder.input_type is None
+        assert embedder.model == "voyage-3"
+        assert embedder.truncate is True
         assert embedder.prefix == ""
         assert embedder.suffix == ""
+        assert embedder.output_dimension is None
+        assert embedder.output_dtype == "float"
         assert embedder.batch_size == 32
         assert embedder.progress_bar is True
         assert embedder.metadata_fields_to_embed == []
@@ -27,23 +30,27 @@ class TestVoyageDocumentEmbedder:
     def test_init_with_parameters(self):
         embedder = VoyageDocumentEmbedder(
             api_key=Secret.from_token("fake-api-key"),
-            model="model",
-            input_type="query",
-            truncate=True,
+            model="voyage-3-large",
+            input_type="document",
+            truncate=False,
             prefix="prefix",
             suffix="suffix",
             batch_size=4,
+            output_dimension=2048,
+            output_dtype="int8",
             progress_bar=False,
             metadata_fields_to_embed=["test_field"],
             embedding_separator=" | ",
         )
 
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "model"
-        assert embedder.input_type == "query"
-        assert embedder.truncate is True
+        assert embedder.model == "voyage-3-large"
+        assert embedder.input_type == "document"
+        assert embedder.truncate is False
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
+        assert embedder.output_dimension == 2048
+        assert embedder.output_dtype == "int8"
         assert embedder.batch_size == 4
         assert embedder.progress_bar is False
         assert embedder.metadata_fields_to_embed == ["test_field"]
@@ -65,11 +72,13 @@ class TestVoyageDocumentEmbedder:
             "VoyageDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
-                "model": "voyage-2",
-                "input_type": "document",
-                "truncate": None,
+                "model": "voyage-3",
+                "input_type": None,
+                "truncate": True,
                 "prefix": "",
                 "suffix": "",
+                "output_dimension": None,
+                "output_dtype": "float",
                 "batch_size": 32,
                 "progress_bar": True,
                 "metadata_fields_to_embed": [],
@@ -85,11 +94,13 @@ class TestVoyageDocumentEmbedder:
             "VoyageDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
-                "model": "voyage-2",
-                "input_type": "document",
-                "truncate": None,
+                "model": "voyage-3",
+                "input_type": None,
+                "truncate": True,
                 "prefix": "",
                 "suffix": "",
+                "output_dimension": None,
+                "output_dtype": "float",
                 "batch_size": 32,
                 "progress_bar": True,
                 "metadata_fields_to_embed": [],
@@ -100,11 +111,13 @@ class TestVoyageDocumentEmbedder:
         embedder = VoyageDocumentEmbedder.from_dict(data)
 
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "voyage-2"
-        assert embedder.input_type == "document"
-        assert embedder.truncate is None
+        assert embedder.model == "voyage-3"
+        assert embedder.input_type is None
+        assert embedder.truncate is True
         assert embedder.prefix == ""
         assert embedder.suffix == ""
+        assert embedder.output_dimension is None
+        assert embedder.output_dtype == "float"
         assert embedder.batch_size == 32
         assert embedder.progress_bar is True
         assert embedder.metadata_fields_to_embed == []
@@ -115,11 +128,13 @@ class TestVoyageDocumentEmbedder:
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         component = VoyageDocumentEmbedder(
             api_key=Secret.from_env_var("ENV_VAR", strict=False),
-            model="model",
-            input_type="query",
-            truncate=True,
+            model="voyage-3-large",
+            truncate=False,
+            input_type="document",
             prefix="prefix",
             suffix="suffix",
+            output_dimension=2048,
+            output_dtype="int8",
             batch_size=4,
             progress_bar=False,
             metadata_fields_to_embed=["test_field"],
@@ -131,11 +146,13 @@ class TestVoyageDocumentEmbedder:
             "VoyageDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
-                "model": "model",
-                "input_type": "query",
-                "truncate": True,
+                "model": "voyage-3-large",
+                "truncate": False,
+                "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
+                "output_dimension": 2048,
+                "output_dtype": "int8",
                 "batch_size": 4,
                 "progress_bar": False,
                 "metadata_fields_to_embed": ["test_field"],
@@ -151,11 +168,13 @@ class TestVoyageDocumentEmbedder:
             "VoyageDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
-                "model": "model",
-                "input_type": "query",
-                "truncate": True,
+                "model": "voyage-3-large",
+                "truncate": False,
+                "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
+                "output_dimension": 2048,
+                "output_dtype": "int8",
                 "batch_size": 4,
                 "progress_bar": False,
                 "metadata_fields_to_embed": ["test_field"],
@@ -166,11 +185,13 @@ class TestVoyageDocumentEmbedder:
         embedder = VoyageDocumentEmbedder.from_dict(data)
 
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "model"
-        assert embedder.input_type == "query"
-        assert embedder.truncate is True
+        assert embedder.model == "voyage-3-large"
+        assert embedder.input_type == "document"
+        assert embedder.truncate is False
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
+        assert embedder.output_dimension == 2048
+        assert embedder.output_dtype == "int8"
         assert embedder.batch_size == 4
         assert embedder.progress_bar is False
         assert embedder.metadata_fields_to_embed == ["test_field"]
@@ -247,13 +268,15 @@ class TestVoyageDocumentEmbedder:
             Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
         ]
 
-        model = "voyage-large-2-instruct"
+        model = "voyage-3"
         embedder = VoyageDocumentEmbedder(
             model=model,
             prefix="prefix ",
             suffix=" suffix",
             metadata_fields_to_embed=["topic"],
             embedding_separator=" | ",
+            timeout=600,
+            max_retries=1200,
         )
 
         result = embedder.run(documents=docs)
@@ -267,4 +290,4 @@ class TestVoyageDocumentEmbedder:
             assert isinstance(doc.embedding, list)
             assert len(doc.embedding) == 1024
             assert all(isinstance(x, float) for x in doc.embedding)
-        assert result["meta"]["total_tokens"] == 24, "Total tokens does not match"
+        assert result["meta"]["total_tokens"] == 18, "Total tokens does not match"

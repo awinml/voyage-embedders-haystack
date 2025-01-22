@@ -9,8 +9,8 @@ from haystack.document_stores.in_memory import InMemoryDocumentStore
 # Import Voyage Embedders
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder, VoyageTextEmbedder
 
-# Load first 100 rows of the Simple Wikipedia Dataset from HuggingFace
-dataset = load_dataset("pszemraj/simple_wikipedia", split="validation[:100]")
+# Load first 10 rows of the Simple Wikipedia Dataset from HuggingFace
+dataset = load_dataset("pszemraj/simple_wikipedia", split="validation[:10]")
 
 docs = [
     Document(
@@ -28,8 +28,10 @@ retriever = InMemoryEmbeddingRetriever(document_store=doc_store)
 doc_writer = DocumentWriter(document_store=doc_store)
 
 doc_embedder = VoyageDocumentEmbedder(
-    model="voyage-2",
+    model="voyage-3",
     input_type="document",
+    timeout=600,
+    max_retries=1200,
 )
 
 # Indexing Pipeline
@@ -44,7 +46,12 @@ print(f"Number of documents in Document Store: {len(doc_store.filter_documents()
 print(f"First Document: {doc_store.filter_documents()[0]}")
 print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}")
 
-text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
+text_embedder = VoyageTextEmbedder(
+    model="voyage-3",
+    input_type="query",
+    timeout=600,
+    max_retries=1200,
+)
 
 # Query Pipeline
 query_pipeline = Pipeline()

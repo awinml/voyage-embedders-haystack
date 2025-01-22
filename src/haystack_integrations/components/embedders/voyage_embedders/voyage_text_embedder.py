@@ -28,11 +28,13 @@ class VoyageTextEmbedder:
     def __init__(
         self,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        model: str = "voyage-2",
-        input_type: str = "query",
-        truncate: Optional[bool] = None,
+        model: str = "voyage-3",
+        input_type: Optional[str] = None,
+        truncate: bool = True,
         prefix: str = "",
         suffix: str = "",
+        output_dimension: Optional[int] = None,
+        output_dtype: str = "float",
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
     ):
@@ -43,24 +45,35 @@ class VoyageTextEmbedder:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
         :param model:
-        The name of the Voyage model to use. Defaults to "voyage-2".
+        The name of the Voyage model to use. Defaults to "voyage-3".
         For more details on the available models,
         see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
         :param input_type:
-            Type of the input text. This is used to prepend different prompts to the text.
-            - Defaults to `"query"`. This will prepend the text with, "Represent the query for retrieving
-              supporting documents: ".
+            Type of the input text. This is used to prepend different prompts to the text. For retrieval/search
+            purposes, where a "query" is used to search for relevant information among a collection of data, referred
+            to as "documents", it is recommended to specify whether your inputs (texts) are intended as queries or
+            documents by setting `input_type` to `"query"` or `"document"` , respectively.
+            - Defaults to `None`. This means the embedding model directly converts the inputs (texts) into numerical
+                vectors. No prompt is added.
+            - Can be set to `"query"`. This will prepend the text with, "Represent the query for retrieving
+                supporting documents: ".
             - Can be set to `"document"`. For document, the prompt is "Represent the document for retrieval: ".
-            - Can be set to `None` for no prompt.
-        for the document prompt.
         :param truncate:
-            Whether to truncate the input texts to fit within the context length.
+            Whether to truncate the input texts to fit within the context length. Defaults to `True`.
             - If `True`, over-length input texts will be truncated to fit within the context length, before vectorized
-              by the embedding model.
-            - If False, an error will be raised if any given text exceeds the context length.
-            - Defaults to `None`, which will truncate the input text before sending it to the embedding model if it
-              slightly exceeds the context window length. If it significantly exceeds the context window length, an
-              error will be raised.
+                by the embedding model.
+            - If `False`, an error will be raised if any given text exceeds the context length.
+        :param output_dimension:
+            The dimension of the output embedding. Defaults to `None`.
+            - Most models only support a single default dimension, used when `output_dimension` is set to `None` (see
+            [model embedding dimensions](https://docs.voyageai.com/docs/embeddings#model-choices) for more details).
+            - `voyage-3-large` and `voyage-code-3` support the following `output_dimension` values: 2048,
+            1024 (default), 512, and 256.
+        :param output_dtype: The data type for the embeddings to be returned. Defaults to `"float"`.
+            Options: "float", "int8", "uint8", "binary", "ubinary". "float" is supported for all models.
+            "int8", "uint8", "binary", and "ubinary" are supported by voyage-3-large and voyage-code-3.
+            Please see the [FAQ](https://docs.voyageai.com/docs/faq#what-is-quantization-and-output-data-types) for
+            more details about output data types.
         :param prefix:
             A string to add to the beginning of each text.
         :param suffix:
@@ -78,6 +91,8 @@ class VoyageTextEmbedder:
         self.truncate = truncate
         self.prefix = prefix
         self.suffix = suffix
+        self.output_dimension = output_dimension
+        self.output_dtype = output_dtype
 
         if timeout is None:
             timeout = int(os.environ.get("VOYAGE_TIMEOUT", 30))
@@ -100,6 +115,8 @@ class VoyageTextEmbedder:
             truncate=self.truncate,
             prefix=self.prefix,
             suffix=self.suffix,
+            output_dimension=self.output_dimension,
+            output_dtype=self.output_dtype,
             api_key=self.api_key.to_dict(),
         )
 
@@ -139,7 +156,12 @@ class VoyageTextEmbedder:
         text_to_embed = self.prefix + text + self.suffix
 
         response = self.client.embed(
-            texts=[text_to_embed], model=self.model, input_type=self.input_type, truncation=self.truncate
+            texts=[text_to_embed],
+            model=self.model,
+            input_type=self.input_type,
+            truncation=self.truncate,
+            output_dtype=self.output_dtype,
+            output_dimension=self.output_dimension,
         )
         embedding = response.embeddings[0]
         meta = {"total_tokens": response.total_tokens}
