@@ -2,6 +2,7 @@ import os
 
 import pytest
 from haystack.utils.auth import Secret
+
 from haystack_integrations.components.embedders.voyage_embedders import VoyageTextEmbedder
 
 
@@ -12,28 +13,34 @@ class TestVoyageTextEmbedder:
         embedder = VoyageTextEmbedder()
 
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.input_type == "query"
-        assert embedder.model == "voyage-2"
-        assert embedder.truncate is None
+        assert embedder.input_type is None
+        assert embedder.model == "voyage-3"
+        assert embedder.truncate is True
         assert embedder.prefix == ""
         assert embedder.suffix == ""
+        assert embedder.output_dimension is None
+        assert embedder.output_dtype == "float"
 
     @pytest.mark.unit
     def test_init_with_parameters(self):
         embedder = VoyageTextEmbedder(
             api_key=Secret.from_token("fake-api-key"),
-            model="model",
+            model="voyage-3-large",
             input_type="document",
-            truncate=True,
+            truncate=False,
             prefix="prefix",
             suffix="suffix",
+            output_dimension=2048,
+            output_dtype="int8",
         )
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "model"
-        assert embedder.truncate is True
+        assert embedder.model == "voyage-3-large"
+        assert embedder.truncate is False
         assert embedder.input_type == "document"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
+        assert embedder.output_dimension == 2048
+        assert embedder.output_dtype == "int8"
 
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
@@ -51,11 +58,13 @@ class TestVoyageTextEmbedder:
             "VoyageTextEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
-                "model": "voyage-2",
-                "truncate": None,
-                "input_type": "query",
+                "model": "voyage-3",
+                "truncate": True,
+                "input_type": None,
                 "prefix": "",
                 "suffix": "",
+                "output_dimension": None,
+                "output_dtype": "float",
             },
         }
 
@@ -67,32 +76,38 @@ class TestVoyageTextEmbedder:
             "VoyageTextEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
-                "model": "voyage-2",
-                "truncate": None,
-                "input_type": "query",
+                "model": "voyage-3",
+                "truncate": True,
+                "input_type": None,
                 "prefix": "",
                 "suffix": "",
+                "output_dimension": None,
+                "output_dtype": "float",
             },
         }
 
         embedder = VoyageTextEmbedder.from_dict(data)
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.input_type == "query"
-        assert embedder.model == "voyage-2"
-        assert embedder.truncate is None
+        assert embedder.input_type is None
+        assert embedder.model == "voyage-3"
+        assert embedder.truncate is True
         assert embedder.prefix == ""
         assert embedder.suffix == ""
+        assert embedder.output_dimension is None
+        assert embedder.output_dtype == "float"
 
     @pytest.mark.unit
     def test_to_dict_with_custom_init_parameters(self, monkeypatch):
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         component = VoyageTextEmbedder(
             api_key=Secret.from_env_var("ENV_VAR", strict=False),
-            model="model",
-            truncate=True,
+            model="voyage-3-large",
+            truncate=False,
             input_type="document",
             prefix="prefix",
             suffix="suffix",
+            output_dimension=2048,
+            output_dtype="int8",
         )
         data = component.to_dict()
         assert data == {
@@ -100,11 +115,13 @@ class TestVoyageTextEmbedder:
             "VoyageTextEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
-                "model": "model",
-                "truncate": True,
+                "model": "voyage-3-large",
+                "truncate": False,
                 "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
+                "output_dimension": 2048,
+                "output_dtype": "int8",
             },
         }
 
@@ -116,33 +133,43 @@ class TestVoyageTextEmbedder:
             "VoyageTextEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
-                "model": "model",
-                "truncate": True,
+                "model": "voyage-3-large",
+                "truncate": False,
                 "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
+                "output_dimension": 2048,
+                "output_dtype": "int8",
             },
         }
 
         embedder = VoyageTextEmbedder.from_dict(data)
         assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "model"
-        assert embedder.truncate is True
+        assert embedder.model == "voyage-3-large"
+        assert embedder.truncate is False
         assert embedder.input_type == "document"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
+        assert embedder.output_dimension == 2048
+        assert embedder.output_dtype == "int8"
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     def test_run(self):
-        model = "voyage-large-2-instruct"
+        model = "voyage-3-large"
 
-        embedder = VoyageTextEmbedder(model=model, prefix="prefix ", suffix=" suffix")
+        embedder = VoyageTextEmbedder(
+            model=model,
+            prefix="prefix ",
+            suffix=" suffix",
+            timeout=600,
+            max_retries=1200,
+        )
         result = embedder.run(text="The food was delicious")
 
         assert len(result["embedding"]) == 1024
         assert all(isinstance(x, float) for x in result["embedding"])
-        assert result["meta"]["total_tokens"] == 8, "Total tokens does not match"
+        assert result["meta"]["total_tokens"] == 6, "Total tokens does not match"
 
     @pytest.mark.unit
     def test_run_wrong_input_format(self):
