@@ -18,7 +18,7 @@ class VoyageRanker:
     Usage example:
     ```python
     from haystack import Document
-    from haystack_integrations.components.rerankers.voyage_rerankers.voyage_text_reranker import VoyageRanker
+    from haystack_integrations.components.rankers.voyage.ranker import VoyageRanker
 
     ranker = VoyageRanker(model="rerank-2", top_k=2)
 
@@ -49,9 +49,9 @@ class VoyageRanker:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
         :param model:
-        The name of the Voyage model to use. Defaults to "voyage-2".
-        For more details on the available models,
-        see [Voyage Rerankers documentation](https://docs.voyageai.com/docs/reranker).
+            The name of the Voyage model to use. Defaults to "voyage-2".
+            For more details on the available models,
+            see [Voyage Rerankers documentation](https://docs.voyageai.com/docs/reranker).
         :param truncate:
             Whether to truncate the input texts to fit within the context length.
             - If `True`, over-length input texts will be truncated to fit within the context length, before vectorized
@@ -125,9 +125,11 @@ class VoyageRanker:
     def _prepare_input_docs(self, documents: List[Document]) -> List[str]:
         """
         Prepare the input by concatenating the document text with the metadata fields specified.
-        :param documents: The list of Document objects.
+        :param documents:
+            The list of Document objects.
 
-        :return: A list of strings to be given as input to Voyage AI model.
+        :return:
+            A list of strings to be given as input to Voyage AI model.
         """
         concatenated_input_list = []
         for doc in documents:
