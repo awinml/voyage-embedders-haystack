@@ -56,8 +56,7 @@ class TestVoyageTextReranker:
         component = VoyageRanker()
         data = component.to_dict()
         assert data == {
-            "type": "haystack_integrations.components.rankers.voyage.ranker."
-            "VoyageRanker",
+            "type": "haystack_integrations.components.rankers.voyage.ranker.VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
                 "model": "rerank-2",
@@ -66,7 +65,7 @@ class TestVoyageTextReranker:
                 "prefix": "",
                 "suffix": "",
                 "meta_fields_to_embed": [],
-                "meta_data_separator": "\n"
+                "meta_data_separator": "\n",
             },
         }
 
@@ -74,8 +73,7 @@ class TestVoyageTextReranker:
     def test_from_dict(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         data = {
-            "type": "haystack_integrations.components.rankers.voyage.ranker."
-            "VoyageRanker",
+            "type": "haystack_integrations.components.rankers.voyage.ranker.VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
                 "model": "rerank-2",
@@ -84,7 +82,7 @@ class TestVoyageTextReranker:
                 "prefix": "",
                 "suffix": "",
                 "meta_fields_to_embed": None,
-                "meta_data_separator": "\n"
+                "meta_data_separator": "\n",
             },
         }
 
@@ -96,7 +94,7 @@ class TestVoyageTextReranker:
         assert reranker.prefix == ""
         assert reranker.suffix == ""
         assert reranker.meta_fields_to_embed == []
-        assert  reranker.meta_data_separator == '\n'
+        assert reranker.meta_data_separator == "\n"
 
     @pytest.mark.unit
     def test_to_dict_with_custom_init_parameters(self, monkeypatch):
@@ -111,8 +109,7 @@ class TestVoyageTextReranker:
         )
         data = component.to_dict()
         assert data == {
-            "type": "haystack_integrations.components.rankers.voyage.ranker."
-            "VoyageRanker",
+            "type": "haystack_integrations.components.rankers.voyage.ranker.VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
                 "model": "model",
@@ -120,9 +117,8 @@ class TestVoyageTextReranker:
                 "top_k": 10,
                 "prefix": "prefix",
                 "suffix": "suffix",
-                'meta_data_separator': '\n',
-                'meta_fields_to_embed': [],
-
+                "meta_data_separator": "\n",
+                "meta_fields_to_embed": [],
             },
         }
 
@@ -130,8 +126,7 @@ class TestVoyageTextReranker:
     def test_from_dict_with_custom_init_parameters(self, monkeypatch):
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         data = {
-            "type": "haystack_integrations.components.rankers.voyage.ranker."
-            "VoyageRanker",
+            "type": "haystack_integrations.components.rankers.voyage.ranker.VoyageRanker",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
                 "model": "model",
@@ -178,5 +173,5 @@ class TestVoyageTextReranker:
             Document(id="ijkl", content="Lyon is in France"),
         ]
 
-        with pytest.raises(InvalidRequestError, match=f"not a valid string"):
+        with pytest.raises(InvalidRequestError, match="not a valid string"):
             reranker.run(query=integer_input, documents=documents)

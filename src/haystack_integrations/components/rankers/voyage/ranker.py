@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional
 
-from haystack import component, default_from_dict, default_to_dict, Document, logging
+from haystack import Document, component, default_from_dict, default_to_dict, logging
 from haystack.utils import Secret, deserialize_secrets_inplace
 from voyageai import Client
 
