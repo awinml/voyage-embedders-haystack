@@ -48,10 +48,12 @@ cov = ["test-cov", "cov-report"]
 example-text-embedder = "python examples/text_embedder_example.py"
 example-doc-embedder = "python examples/document_embedder_example.py"
 example-semantic-search = "python examples/semantic_search_pipeline_example.py"
+example-reranker = "python examples/reranker_example.py"
 test-examples = [
   "example-text-embedder",
   "example-doc-embedder",
   "example-semantic-search",
+  "example-reranker",
 ]
 
 [[tool.hatch.envs.all.matrix]]
