@@ -189,14 +189,23 @@ class VoyageDocumentEmbedder:
             range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
         ):
             batch = texts_to_embed[i : i + batch_size]
-            response = self.client.embed(
-                texts=batch,
-                model=self.model,
-                input_type=self.input_type,
-                truncation=self.truncate,
-                output_dtype=self.output_dtype,
-                output_dimension=self.output_dimension,
-            )
+            if "context" in self.model:
+                response = self.client.contextualized_embed(
+                    inputs=batch,
+                    model=self.model,
+                    input_type=self.input_type,
+                    output_dtype=self.output_dtype,
+                    output_dimension=self.output_dimension,
+                )
+            else:
+                response = self.client.embed(
+                    texts=batch,
+                    model=self.model,
+                    input_type=self.input_type,
+                    truncation=self.truncate,
+                    output_dtype=self.output_dtype,
+                    output_dimension=self.output_dimension,
+                )
             all_embeddings.extend(response.embeddings)
             meta["total_tokens"] += response.total_tokens
 
