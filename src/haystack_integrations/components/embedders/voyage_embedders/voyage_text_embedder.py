@@ -95,9 +95,9 @@ class VoyageTextEmbedder:
         self.output_dtype = output_dtype
 
         if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", 30))
+            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
         if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", 5))
+            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
         self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
