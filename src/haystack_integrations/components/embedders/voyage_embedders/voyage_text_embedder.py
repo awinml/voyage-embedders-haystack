@@ -37,6 +37,7 @@ class VoyageTextEmbedder:
         output_dtype: str = "float",
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
+        contextualized_embeddings: Optional[bool] = False,
     ):
         """
         Create an VoyageTextEmbedder component.
@@ -84,6 +85,10 @@ class VoyageTextEmbedder:
         :param max_retries:
             Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
             inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
+        :param contextualized_embeddings:
+            Boolean for when the user is using `voyage-context` models. Defaults to `False`.
+            - If `True`, the `contextualized_embed` api will be used by the configured `voyage-context` series embedding model.
+            - If `False`, the usual `embed` api will be used by non context voyage models.
         """
         self.api_key = api_key
         self.model = model
@@ -93,11 +98,12 @@ class VoyageTextEmbedder:
         self.suffix = suffix
         self.output_dimension = output_dimension
         self.output_dtype = output_dtype
+        self.contextualized_embeddings = contextualized_embeddings
 
         if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
+            timeout = int(os.environ.get("VOYAGE_TIMEOUT", 30))
         if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
+            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", 5))
 
         self.client = Client(
             api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout
@@ -157,7 +163,7 @@ class VoyageTextEmbedder:
 
         text_to_embed = self.prefix + text + self.suffix
 
-        if "context" in self.model:
+        if self.contextualized_embeddings:
             response = self.client.contextualized_embed(
                 inputs=[[text_to_embed]],
                 model=self.model,
