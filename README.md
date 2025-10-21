@@ -148,12 +148,12 @@ print(top_result)
 
 ## Contributing
 
-Pull requests are welcome. For major changes, please open an issue first.
+We welcome contributions from the community! Please take a look at our [contributing guide](CONTRIBUTING.md) for more details on how to get started.
 
-## Author
-
-[Ashwin Mathur](https://github.com/awinml)
+Pull requests are welcome. For major changes, please open an issue first to discuss the proposed changes.
 
 ## License
 
 `voyage-embedders-haystack` is distributed under the terms of the [Apache-2.0 license](https://github.com/awinml/voyage-embedders-haystack/blob/main/LICENSE).
+
+Maintained by [Ashwin Mathur](https://github.com/awinml).
