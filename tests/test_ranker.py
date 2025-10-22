@@ -47,7 +47,7 @@ class TestVoyageTextReranker:
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
         monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
-        with pytest.raises(ValueError, match="None of the .* environment variables are set"):
+        with pytest.raises(ValueError, match=r"None of the .* environment variables are set"):
             VoyageRanker()
 
     @pytest.mark.unit
