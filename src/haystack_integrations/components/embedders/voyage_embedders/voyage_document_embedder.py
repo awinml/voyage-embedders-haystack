@@ -45,6 +45,7 @@ class VoyageDocumentEmbedder:
         progress_bar: bool = True,
         timeout: Optional[int] = None,
         max_retries: Optional[int] = None,
+        contextualized_embeddings: Optional[bool] = False,
     ):
         """
         Create a VoyageDocumentEmbedder component.
@@ -101,6 +102,10 @@ class VoyageDocumentEmbedder:
         :param max_retries:
             Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
             inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
+        :param contextualized_embeddings:
+            Boolean for when the user is using `voyage-context` models. Defaults to `False`.
+            - If `True`, the `contextualized_embed` api will be used by the configured `voyage-context` series embedding model.
+            - If `False`, the usual `embed` api will be used by non context voyage models.
         """
         self.api_key = api_key
         self.model = model
@@ -114,13 +119,16 @@ class VoyageDocumentEmbedder:
         self.progress_bar = progress_bar
         self.metadata_fields_to_embed = metadata_fields_to_embed or []
         self.embedding_separator = embedding_separator
+        self.contextualized_embeddings = contextualized_embeddings
 
         if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
+            timeout = int(os.environ.get("VOYAGE_TIMEOUT", 30))
         if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
+            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", 5))
 
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self.client = Client(
+            api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -171,13 +179,19 @@ class VoyageDocumentEmbedder:
             ]
 
             text_to_embed = (
-                self.prefix + self.embedding_separator.join([*meta_values_to_embed, doc.content or ""]) + self.suffix
+                self.prefix
+                + self.embedding_separator.join(
+                    [*meta_values_to_embed, doc.content or ""]
+                )
+                + self.suffix
             )
 
             texts_to_embed.append(text_to_embed)
         return texts_to_embed
 
-    def _embed_batch(self, texts_to_embed: List[str], batch_size: int) -> Tuple[List[List[float]], Dict[str, Any]]:
+    def _embed_batch(
+        self, texts_to_embed: List[str], batch_size: int
+    ) -> Tuple[List[List[float]], Dict[str, Any]]:
         """
         Embed a list of texts in batches.
         """
@@ -186,19 +200,32 @@ class VoyageDocumentEmbedder:
         meta: Dict[str, Any] = {}
         meta["total_tokens"] = 0
         for i in tqdm(
-            range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
+            range(0, len(texts_to_embed), batch_size),
+            disable=not self.progress_bar,
+            desc="Calculating embeddings",
         ):
             batch = texts_to_embed[i : i + batch_size]
-            response = self.client.embed(
-                texts=batch,
-                model=self.model,
-                input_type=self.input_type,
-                truncation=self.truncate,
-                output_dtype=self.output_dtype,
-                output_dimension=self.output_dimension,
-            )
-            all_embeddings.extend(response.embeddings)
-            meta["total_tokens"] += response.total_tokens
+            if self.contextualized_embeddings:
+                response = self.client.contextualized_embed(
+                    inputs=[batch],
+                    model=self.model,
+                    input_type=self.input_type,
+                    output_dtype=self.output_dtype,
+                    output_dimension=self.output_dimension,
+                )
+                embeddings_to_add = response.results[0].embeddings
+            else:
+                response = self.client.embed(
+                    texts=batch,
+                    model=self.model,
+                    input_type=self.input_type,
+                    truncation=self.truncate,
+                    output_dtype=self.output_dtype,
+                    output_dimension=self.output_dimension,
+                )
+                embeddings_to_add = response.embeddings
+            all_embeddings.extend(embeddings_to_add)
+            meta["total_tokens"] += getattr(response, "total_tokens", 0)
 
         return all_embeddings, meta
 
@@ -215,7 +242,9 @@ class VoyageDocumentEmbedder:
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model.
         """
-        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+        if not isinstance(documents, list) or (
+            documents and not isinstance(documents[0], Document)
+        ):
             msg = (
                 "VoyageDocumentEmbedder expects a list of Documents as input."
                 " In case you want to embed a string, please use the VoyageTextEmbedder."
@@ -224,7 +253,9 @@ class VoyageDocumentEmbedder:
 
         texts_to_embed = self._prepare_texts_to_embed(documents=documents)
 
-        embeddings, meta = self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
+        embeddings, meta = self._embed_batch(
+            texts_to_embed=texts_to_embed, batch_size=self.batch_size
+        )
 
         for doc, emb in zip(documents, embeddings):
             doc.embedding = emb
