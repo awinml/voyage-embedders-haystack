@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "voyage-embedders-haystack"
-version = "1.5.0"
-description = 'Haystack 2.x component to embed strings and Documents using VoyageAI Embedding models.'
+version = "1.6.0"
+description = 'Haystack component to embed strings and Documents using VoyageAI Embedding models.'
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
@@ -13,17 +13,13 @@ keywords = ["Haystack", "VoyageAI"]
 authors = [{ name = "Ashwin Mathur", email = "" }]
 maintainers = [{ name = "Ashwin Mathur", email = "" }]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
   "License :: Freely Distributable",
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
+  "Programming Language :: Python :: 3",  
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
