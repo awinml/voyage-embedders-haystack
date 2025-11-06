@@ -1,4 +1,5 @@
 import os
+from unittest.mock import MagicMock
 
 import pytest
 from haystack import Document
@@ -323,6 +324,141 @@ class TestVoyageContextualizedDocumentEmbedder:
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
         assert result["meta"]["total_tokens"] == 0
+
+    @pytest.mark.unit
+    def test_init_with_env_vars(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        monkeypatch.setenv("VOYAGE_TIMEOUT", "60")
+        monkeypatch.setenv("VOYAGE_MAX_RETRIES", "10")
+
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        assert embedder.client.api_key == "fake-api-key"
+
+    @pytest.mark.unit
+    def test_run_with_mocked_client(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        docs = [
+            Document(content="Test content 1", meta={"source_id": "doc1"}),
+            Document(content="Test content 2", meta={"source_id": "doc1"}),
+        ]
+
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        # Mock the client's contextualized_embed method
+        mock_result = MagicMock()
+        mock_result.embeddings = [[0.1, 0.2], [0.3, 0.4]]
+        mock_result.total_tokens = 10
+
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_response.total_tokens = 10
+
+        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+
+        result = embedder.run(documents=docs)
+
+        assert len(result["documents"]) == 2
+        assert result["documents"][0].embedding == [0.1, 0.2]
+        assert result["documents"][1].embedding == [0.3, 0.4]
+        assert result["meta"]["total_tokens"] == 10
+
+    @pytest.mark.unit
+    def test_run_with_all_parameters_mocked(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        docs = [
+            Document(content="Test", meta={"source_id": "doc1"}),
+        ]
+
+        embedder = VoyageContextualizedDocumentEmbedder(
+            input_type="document",
+            output_dtype="int8",
+            output_dimension=512,
+            chunk_fn=lambda x: [x],
+        )
+
+        # Mock the client
+        mock_result = MagicMock()
+        mock_result.embeddings = [[0.1, 0.2]]
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_response.total_tokens = 5
+
+        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+
+        embedder.run(documents=docs)
+
+        # Verify the method was called with all parameters
+        embedder.client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        assert call_kwargs["input_type"] == "document"
+        assert call_kwargs["output_dtype"] == "int8"
+        assert call_kwargs["output_dimension"] == 512
+        assert call_kwargs["chunk_fn"] is not None
+
+    @pytest.mark.unit
+    def test_embed_batch_with_multiple_groups(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageContextualizedDocumentEmbedder(batch_size=1, progress_bar=False)
+
+        # Mock the client to return different embeddings for each batch
+        mock_result1 = MagicMock()
+        mock_result1.embeddings = [[0.1, 0.2]]
+        mock_response1 = MagicMock()
+        mock_response1.results = [mock_result1]
+        mock_response1.total_tokens = 5
+
+        mock_result2 = MagicMock()
+        mock_result2.embeddings = [[0.3, 0.4]]
+        mock_response2 = MagicMock()
+        mock_response2.results = [mock_result2]
+        mock_response2.total_tokens = 6
+
+        embedder.client.contextualized_embed = MagicMock(side_effect=[mock_response1, mock_response2])
+
+        grouped_texts = [["text1"], ["text2"]]
+        embeddings, meta = embedder._embed_batch(grouped_texts, batch_size=1)
+
+        assert len(embeddings) == 2
+        assert embeddings[0] == [0.1, 0.2]
+        assert embeddings[1] == [0.3, 0.4]
+        assert meta["total_tokens"] == 11
+        assert embedder.client.contextualized_embed.call_count == 2
+
+    @pytest.mark.unit
+    def test_init_with_explicit_timeout_and_retries(self):
+        embedder = VoyageContextualizedDocumentEmbedder(
+            api_key=Secret.from_token("fake-api-key"), timeout=100, max_retries=20
+        )
+        # This should use the explicit values, not environment variables
+        assert embedder.client is not None
+
+    @pytest.mark.unit
+    def test_embed_batch_without_optional_params(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False)
+
+        # Mock the client
+        mock_result = MagicMock()
+        mock_result.embeddings = [[0.1, 0.2]]
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_response.total_tokens = 5
+
+        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+
+        grouped_texts = [["text1"]]
+        _embeddings, _meta = embedder._embed_batch(grouped_texts, batch_size=32)
+
+        # Verify the method was called without optional parameters
+        embedder.client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        assert "input_type" not in call_kwargs
+        assert "chunk_fn" not in call_kwargs
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
