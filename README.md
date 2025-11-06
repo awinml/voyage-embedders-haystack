@@ -36,7 +36,6 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
   - **Breaking Change:** `VoyageDocumentEmbedder` and `VoyageTextEmbedder` now accept the `model` parameter instead of `model_name`.
   - The embedders have been use the new `voyageai.Client.embed()` method instead of the deprecated `get_embedding` and `get_embeddings` methods of the global namespace.
   - Support for the new `truncate` parameter has been added.
-  - Default embedding model has been changed to "voyage-2" from the deprecated "voyage-01".
   - The embedders now return the total number of tokens used as part of the `"total_tokens"` in the metadata.
 
 - **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.

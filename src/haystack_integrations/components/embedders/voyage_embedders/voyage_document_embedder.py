@@ -20,7 +20,7 @@ class VoyageDocumentEmbedder:
 
     doc = Document(content="I love pizza!")
 
-    document_embedder = VoyageDocumentEmbedder()
+    document_embedder = VoyageDocumentEmbedder(model="voyage-3")
 
     result = document_embedder.run([doc])
     print(result['documents'][0].embedding)
@@ -31,8 +31,8 @@ class VoyageDocumentEmbedder:
 
     def __init__(
         self,
+        model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        model: str = "voyage-3",
         input_type: Optional[str] = None,
         truncate: bool = True,
         prefix: str = "",
@@ -49,13 +49,13 @@ class VoyageDocumentEmbedder:
         """
         Create a VoyageDocumentEmbedder component.
 
+        :param model:
+            The name of the model to use.
+            For more details on the available models,
+            see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
         :param api_key:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
-        :param model:
-            The name of the model to use. Defaults to "voyage-3".
-            For more details on the available models,
-            see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
         :param input_type:
             Type of the input text. This is used to prepend different prompts to the text. For retrieval/search
             purposes, where a "query" is used to search for relevant information among a collection of data, referred

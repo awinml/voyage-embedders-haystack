@@ -17,7 +17,7 @@ class VoyageTextEmbedder:
 
     text_to_embed = "I love pizza!"
 
-    text_embedder = VoyageTextEmbedder()
+    text_embedder = VoyageTextEmbedder(model="voyage-3")
 
     print(text_embedder.run(text_to_embed))
 
@@ -27,8 +27,8 @@ class VoyageTextEmbedder:
 
     def __init__(
         self,
+        model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        model: str = "voyage-3",
         input_type: Optional[str] = None,
         truncate: bool = True,
         prefix: str = "",
@@ -41,13 +41,13 @@ class VoyageTextEmbedder:
         """
         Create an VoyageTextEmbedder component.
 
+        :param model:
+            The name of the Voyage model to use.
+            For more details on the available models,
+            see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
         :param api_key:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
-        :param model:
-        The name of the Voyage model to use. Defaults to "voyage-3".
-        For more details on the available models,
-        see [Voyage Embeddings documentation](https://docs.voyageai.com/embeddings/).
         :param input_type:
             Type of the input text. This is used to prepend different prompts to the text. For retrieval/search
             purposes, where a "query" is used to search for relevant information among a collection of data, referred

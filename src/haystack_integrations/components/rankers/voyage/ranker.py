@@ -31,8 +31,8 @@ class VoyageRanker:
 
     def __init__(
         self,
+        model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        model: str = "rerank-2",
         truncate: Optional[bool] = None,
         top_k: Optional[int] = None,
         prefix: str = "",
@@ -45,13 +45,13 @@ class VoyageRanker:
         """
         Create an VoyageRanker component.
 
+        :param model:
+            The name of the Voyage model to use.
+            For more details on the available models,
+            see [Voyage Rerankers documentation](https://docs.voyageai.com/docs/reranker).
         :param api_key:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
-        :param model:
-            The name of the Voyage model to use. Defaults to "voyage-2".
-            For more details on the available models,
-            see [Voyage Rerankers documentation](https://docs.voyageai.com/docs/reranker).
         :param truncate:
             Whether to truncate the input texts to fit within the context length.
             - If `True`, over-length input texts will be truncated to fit within the context length, before vectorized
