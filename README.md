@@ -15,6 +15,11 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
 
 #### What's New
 
+- **[v1.7.0 - TBD]:**
+
+  - The new `VoyageContextualizedDocumentEmbedder` component supports Voyage's contextualized chunk embeddings.
+  - Contextualized embeddings encode document chunks "in context" with other chunks from the same document, preserving semantic relationships and reducing context loss for improved retrieval accuracy.
+
 - **[v1.5.0 - 22/01/25]:**
 
   - The new `VoyageRanker` component can be used to rerank documents using the `Voyage Reranker` models.
@@ -51,11 +56,25 @@ pip install voyage-embedders-haystack
 
 ## Usage
 
-You can use Voyage Embedding models with two components: [VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py) and [VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py).
+You can use Voyage Embedding models with multiple components:
 
-To create semantic embeddings for documents, use `VoyageDocumentEmbedder` in your indexing pipeline. For generating embeddings for queries, use `VoyageTextEmbedder`.
+- **[VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py)**: For generating embeddings for queries.
+- **[VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py)**: For creating semantic embeddings for documents in your indexing pipeline.
+- **[VoyageContextualizedDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_contextualized_document_embedder.py)**: For creating contextualized embeddings where document chunks are embedded together to preserve context and improve retrieval accuracy.
 
 The Voyage Reranker models can be used with the [VoyageRanker](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/rankers/voyage/ranker.py) component.
+
+### Contextualized Chunk Embeddings
+
+The `VoyageContextualizedDocumentEmbedder` uses Voyage's contextualized embedding models to encode document chunks "in context" with other chunks from the same document. This approach preserves semantic relationships between chunks and reduces context loss, leading to improved retrieval accuracy.
+
+**Key features:**
+- Documents are grouped by a metadata field (default: `source_id`)
+- Chunks from the same source document are embedded together
+- Maintains semantic connections between related chunks
+- Recommended model: `voyage-context-3`
+
+For detailed usage examples, see the [contextualized embedder example](https://github.com/awinml/voyage-embedders-haystack/blob/main/examples/contextualized_embedder_example.py).
 
 Once you've selected the suitable component for your specific use case, initialize the component with the model name and VoyageAI API key. You can also
 set the environment variable `VOYAGE_API_KEY` instead of passing the API key as an argument.
