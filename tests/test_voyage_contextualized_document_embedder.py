@@ -460,6 +460,56 @@ class TestVoyageContextualizedDocumentEmbedder:
         assert "input_type" not in call_kwargs
         assert "chunk_fn" not in call_kwargs
 
+    @pytest.mark.unit
+    def test_embed_batch_with_output_dimension_only(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False, output_dimension=512)
+
+        # Mock the client
+        mock_result = MagicMock()
+        mock_result.embeddings = [[0.1, 0.2]]
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_response.total_tokens = 5
+
+        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+
+        grouped_texts = [["text1"]]
+        _embeddings, _meta = embedder._embed_batch(grouped_texts, batch_size=32)
+
+        # Verify output_dimension is passed but output_dtype is not
+        embedder.client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        assert call_kwargs["output_dimension"] == 512
+        assert call_kwargs["output_dtype"] == "float"  # default value
+
+    @pytest.mark.unit
+    def test_embed_batch_with_none_output_dtype(self, monkeypatch):
+        """Test the edge case where output_dtype is explicitly set to None."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False)
+        # Explicitly set output_dtype to None to cover the branch where it's not added to api_params
+        embedder.output_dtype = None  # type: ignore
+
+        # Mock the client
+        mock_result = MagicMock()
+        mock_result.embeddings = [[0.1, 0.2]]
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_response.total_tokens = 5
+
+        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+
+        grouped_texts = [["text1"]]
+        _embeddings, _meta = embedder._embed_batch(grouped_texts, batch_size=32)
+
+        # Verify output_dtype is NOT in the call kwargs when it's None
+        embedder.client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        assert "output_dtype" not in call_kwargs
+
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     def test_run(self):
