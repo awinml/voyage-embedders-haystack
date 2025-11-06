@@ -1,13 +1,17 @@
-[![PyPI](https://img.shields.io/pypi/v/voyage-embedders-haystack)](https://pypi.org/project/voyage-embedders-haystack/)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/voyage-embedders-haystack?color=blue&logo=pypi&logoColor=gold)
-[![GitHub](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE)
-[![Actions status](https://github.com/awinml/voyage-embedders-haystack/workflows/Test/badge.svg)](https://github.com/awinml/voyage-embedders-haystack/actions)
-[![Coverage Status](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)  
-[![Types - Mypy](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Code Style - Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 <h1 align="center"> <a href="https://github.com/awinml/voyage-embedders-haystack"> Voyage Embedders and Rankers - Haystack </a> </h1>
+
+<div align="center">
+
+[![PyPI](https://img.shields.io/pypi/v/voyage-embedders-haystack)](https://pypi.org/project/voyage-embedders-haystack/)
+[![Downloads](https://img.shields.io/pypi/dm/voyage-embedders-haystack?color=blue&logo=pypi&logoColor=gold)](https://pypi.org/project/voyage-embedders-haystack/)
+[![License](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE)
+[![Tests](https://github.com/awinml/voyage-embedders-haystack/workflows/Test/badge.svg)](https://github.com/awinml/voyage-embedders-haystack/actions)
+[![Coverage](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)
+[![Types](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Code Style](https://img.shields.io/badge/Code%20Style-black-000000.svg)](https://github.com/psf/black)
+
+</div>
 
 Custom components for [Haystack](https://github.com/deepset-ai/haystack) for creating embeddings and reranking documents using the [Voyage Models](https://voyageai.com/).
 
@@ -15,7 +19,7 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
 
 #### What's New
 
-- **[v1.7.0 - TBD]:**
+- **[v1.8.0 - 07/11/25]:**
 
   - The new `VoyageContextualizedDocumentEmbedder` component supports Voyage's contextualized chunk embeddings.
   - Contextualized embeddings encode document chunks "in context" with other chunks from the same document, preserving semantic relationships and reducing context loss for improved retrieval accuracy.
