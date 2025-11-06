@@ -230,10 +230,9 @@ class VoyageContextualizedDocumentEmbedder:
             batch = grouped_texts[i : i + batch_size]
 
             # Prepare API call parameters
-            api_params = {
-                "inputs": batch,
-                "model": self.model,
-            }
+            api_params: Dict[str, Any] = {}
+            api_params["inputs"] = batch
+            api_params["model"] = self.model
 
             if self.input_type is not None:
                 api_params["input_type"] = self.input_type
