@@ -40,7 +40,8 @@ def basic_example():
         ),
         # Document 2: Two chunks about TechCorp
         Document(
-            content="TechCorp is a leading software development company.", meta={"source_id": "techcorp", "chunk_index": 0}
+            content="TechCorp is a leading software development company.",
+            meta={"source_id": "techcorp", "chunk_index": 0},
         ),
         Document(
             content="TechCorp launched three new products in Q2 2024.", meta={"source_id": "techcorp", "chunk_index": 1}
@@ -111,7 +112,7 @@ def advanced_example_with_metadata():
     print(f"Embedded {len(result['documents'])} documents")
     print(f"Total tokens used: {result['meta']['total_tokens']}")
     print(f"Embedding dimension: {len(result['documents'][0].embedding)}")
-    print(f"Number of source documents: {len(set(doc.meta['source_id'] for doc in docs))}\n")
+    print(f"Number of source documents: {len({doc.meta['source_id'] for doc in docs})}\n")
 
 
 def custom_source_field_example():

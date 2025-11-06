@@ -177,9 +177,7 @@ class VoyageContextualizedDocumentEmbedder:
             texts_to_embed.append(text_to_embed)
         return texts_to_embed
 
-    def _group_documents_by_source(
-        self, documents: List[Document]
-    ) -> Tuple[Dict[str, List[Document]], List[str]]:
+    def _group_documents_by_source(self, documents: List[Document]) -> Tuple[Dict[str, List[Document]], List[str]]:
         """
         Group documents by their source_id field.
 
@@ -208,9 +206,7 @@ class VoyageContextualizedDocumentEmbedder:
 
         return dict(grouped_docs), source_order
 
-    def _embed_batch(
-        self, grouped_texts: List[List[str]], batch_size: int
-    ) -> Tuple[List[List[float]], Dict[str, Any]]:
+    def _embed_batch(self, grouped_texts: List[List[str]], batch_size: int) -> Tuple[List[List[float]], Dict[str, Any]]:
         """
         Embed groups of texts using contextualized embeddings.
 

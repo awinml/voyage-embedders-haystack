@@ -275,9 +275,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
 
-        with pytest.raises(
-            ValueError, match="Document is missing the 'source_id' metadata field"
-        ):
+        with pytest.raises(ValueError, match="Document is missing the 'source_id' metadata field"):
             embedder._group_documents_by_source(documents)
 
     @pytest.mark.unit
@@ -331,9 +329,13 @@ class TestVoyageContextualizedDocumentEmbedder:
     def test_run(self):
         docs = [
             Document(content="Introduction to quantum computing.", meta={"source_id": "doc1", "topic": "Quantum"}),
-            Document(content="Quantum bits or qubits are the basic unit.", meta={"source_id": "doc1", "topic": "Quantum"}),
+            Document(
+                content="Quantum bits or qubits are the basic unit.", meta={"source_id": "doc1", "topic": "Quantum"}
+            ),
             Document(content="Classical computers use binary bits.", meta={"source_id": "doc2", "topic": "Classical"}),
-            Document(content="Binary systems have two states: 0 and 1.", meta={"source_id": "doc2", "topic": "Classical"}),
+            Document(
+                content="Binary systems have two states: 0 and 1.", meta={"source_id": "doc2", "topic": "Classical"}
+            ),
         ]
 
         model = "voyage-context-3"
