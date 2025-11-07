@@ -11,7 +11,7 @@ class TestVoyageDocumentEmbedder:
     @pytest.mark.unit
     def test_init_default(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
-        embedder = VoyageDocumentEmbedder()
+        embedder = VoyageDocumentEmbedder(model="voyage-3")
 
         assert embedder.client.api_key == "fake-api-key"
         assert embedder.input_type is None
@@ -29,8 +29,8 @@ class TestVoyageDocumentEmbedder:
     @pytest.mark.unit
     def test_init_with_parameters(self):
         embedder = VoyageDocumentEmbedder(
-            api_key=Secret.from_token("fake-api-key"),
             model="voyage-3-large",
+            api_key=Secret.from_token("fake-api-key"),
             input_type="document",
             truncate=False,
             prefix="prefix",
@@ -60,12 +60,12 @@ class TestVoyageDocumentEmbedder:
     def test_init_fail_wo_api_key(self, monkeypatch):
         monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
         with pytest.raises(ValueError, match=r"None of the .* environment variables are set"):
-            VoyageDocumentEmbedder()
+            VoyageDocumentEmbedder(model="voyage-3")
 
     @pytest.mark.unit
     def test_to_dict(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
-        component = VoyageDocumentEmbedder()
+        component = VoyageDocumentEmbedder(model="voyage-3")
         data = component.to_dict()
         assert data == {
             "type": "haystack_integrations.components.embedders.voyage_embedders.voyage_document_embedder."
@@ -127,8 +127,8 @@ class TestVoyageDocumentEmbedder:
     def test_to_dict_with_custom_init_parameters(self, monkeypatch):
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         component = VoyageDocumentEmbedder(
-            api_key=Secret.from_env_var("ENV_VAR", strict=False),
             model="voyage-3-large",
+            api_key=Secret.from_env_var("ENV_VAR", strict=False),
             truncate=False,
             input_type="document",
             prefix="prefix",
@@ -204,6 +204,7 @@ class TestVoyageDocumentEmbedder:
         ]
 
         embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
             api_key=Secret.from_token("fake-api-key"),
             metadata_fields_to_embed=["meta_field"],
             embedding_separator=" | ",
@@ -224,7 +225,7 @@ class TestVoyageDocumentEmbedder:
         documents = [Document(content=f"document number {i}") for i in range(5)]
 
         embedder = VoyageDocumentEmbedder(
-            api_key=Secret.from_token("fake-api-key"), prefix="my_prefix ", suffix=" my_suffix"
+            model="voyage-3", api_key=Secret.from_token("fake-api-key"), prefix="my_prefix ", suffix=" my_suffix"
         )
 
         prepared_texts = embedder._prepare_texts_to_embed(documents)
@@ -239,7 +240,7 @@ class TestVoyageDocumentEmbedder:
 
     @pytest.mark.unit
     def test_run_wrong_input_format(self):
-        embedder = VoyageDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
+        embedder = VoyageDocumentEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
 
         string_input = "text"
         list_integers_input = [1, 2, 3]
@@ -252,7 +253,7 @@ class TestVoyageDocumentEmbedder:
 
     @pytest.mark.unit
     def test_run_on_empty_list(self):
-        embedder = VoyageDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
+        embedder = VoyageDocumentEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
 
         empty_list_input = []
         result = embedder.run(documents=empty_list_input)
