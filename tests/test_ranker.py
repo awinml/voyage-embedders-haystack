@@ -47,14 +47,15 @@ class TestVoyageTextReranker:
 
     @pytest.mark.unit
     def test_init_with_explicit_timeout_and_max_retries(self):
-        reranker = VoyageRanker(
-            model="rerank-2",
-            api_key=Secret.from_token("fake-api-key"),
-            timeout=60,
-            max_retries=3,
-        )
-        assert reranker.client.api_key == "fake-api-key"
-        assert reranker.model == "rerank-2"
+        with patch("haystack_integrations.components.rankers.voyage.ranker.Client") as mock_client:
+            reranker = VoyageRanker(
+                model="rerank-2",
+                api_key=Secret.from_token("fake-api-key"),
+                timeout=60,
+                max_retries=3,
+            )
+            assert reranker.model == "rerank-2"
+            mock_client.assert_called_once_with(api_key="fake-api-key", max_retries=3, timeout=60)
 
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
@@ -223,12 +224,7 @@ class TestVoyageTextReranker:
         documents = [Document(content=f"Content {i}") for i in range(1100)]
 
         # Mock the client.rerank method
-        mock_outputs = []
-        for i in range(10):  # Return 10 results
-            mock_output = MagicMock()
-            mock_output.index = i
-            mock_output.relevance_score = 0.95 - (i * 0.01)
-            mock_outputs.append(mock_output)
+        mock_outputs = [MagicMock(index=i, relevance_score=0.95 - (i * 0.01)) for i in range(10)]  # Return 10 results
 
         mock_response = MagicMock()
         mock_response.results = mock_outputs
@@ -245,3 +241,5 @@ class TestVoyageTextReranker:
         # Verify results are returned correctly
         assert len(result["documents"]) == 10
         assert all(isinstance(doc, Document) for doc in result["documents"])
+        assert result["documents"][0].score == 0.95
+        assert result["documents"][-1].score == 0.95 - (9 * 0.01)
