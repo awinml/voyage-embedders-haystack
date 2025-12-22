@@ -36,13 +36,6 @@ There are many ways to contribute to the Voyage Haystack Integration:
 
    This creates an isolated virtual environment with project dependencies and the project installed in editable mode.
 
-5. Setup pre-commit hooks:
-
-   ```bash
-   pip install pre-commit
-   pre-commit install
-   ```
-
 ## Code Quality Standards
 
 ### Testing
