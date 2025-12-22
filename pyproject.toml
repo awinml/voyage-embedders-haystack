@@ -9,14 +9,12 @@ description = 'Haystack component to embed strings and Documents using VoyageAI 
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
-keywords = ["Haystack", "VoyageAI"]
+keywords = ["Haystack", "VoyageAI", "Embedding", "Rankers", "Semantic Search"]
 authors = [{ name = "Ashwin Mathur", email = "" }]
 maintainers = [{ name = "Ashwin Mathur", email = "" }]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
-  "License :: Freely Distributable",
-  "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",  
@@ -39,7 +37,7 @@ dependencies = ["coverage[toml]>=6.5", "coveralls", "pytest", "datasets"]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
 test-cov = "coverage run -m pytest {args:tests}"
-cov-report = ["- coverage combine", "coverage xml"]
+cov-report = ["- coverage combine", "coverage xml", "coverage html"]
 cov = ["test-cov", "cov-report"]
 example-text-embedder = "python examples/text_embedder_example.py"
 example-doc-embedder = "python examples/document_embedder_example.py"
@@ -142,7 +140,7 @@ ban-relative-imports = "parents"
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
 
 [tool.coverage.run]
-source_pkgs = ["haystack_integrations", "tests"]
+source_pkgs = ["haystack_integrations"]
 branch = true
 parallel = true
 omit = [
@@ -155,7 +153,6 @@ voyage_embedders = [
   "src/haystack_integrations/components/embedders/voyage_embedders",
   "*/voyage_embedders/src/haystack_integrations/components/embedders/voyage_embedders",
 ]
-tests = ["tests", "*voyage_embedders/tests"]
 
 [tool.coverage.report]
 omit = ["*/__init__.py"]
