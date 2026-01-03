@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict, logging
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -33,13 +33,13 @@ class VoyageRanker:
         self,
         model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        truncate: Optional[bool] = None,
-        top_k: Optional[int] = None,
+        truncate: bool | None = None,
+        top_k: int | None = None,
         prefix: str = "",
         suffix: str = "",
-        timeout: Optional[int] = None,
-        max_retries: Optional[int] = None,
-        meta_fields_to_embed: Optional[List[str]] = None,
+        timeout: int | None = None,
+        max_retries: int | None = None,
+        meta_fields_to_embed: list[str] | None = None,
         meta_data_separator: str = "\n",
     ):
         """
@@ -90,7 +90,7 @@ class VoyageRanker:
 
         self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the component to a dictionary.
 
@@ -110,7 +110,7 @@ class VoyageRanker:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VoyageRanker":
+    def from_dict(cls, data: dict[str, Any]) -> "VoyageRanker":
         """
         Deserializes the component from a dictionary.
 
@@ -122,7 +122,7 @@ class VoyageRanker:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    def _prepare_input_docs(self, documents: List[Document]) -> List[str]:
+    def _prepare_input_docs(self, documents: list[Document]) -> list[str]:
         """
         Prepare the input by concatenating the document text with the metadata fields specified.
         :param documents:
@@ -141,8 +141,8 @@ class VoyageRanker:
 
         return concatenated_input_list
 
-    @component.output_types(documents=List[Document])
-    def run(self, query: str, documents: List[Document], top_k: Optional[int] = None):
+    @component.output_types(documents=list[Document])
+    def run(self, query: str, documents: list[Document], top_k: int | None = None):
         """
         Use the Voyage AI Reranker to re-rank the list of documents based on the query.
 
@@ -181,7 +181,7 @@ class VoyageRanker:
         indices = [output.index for output in response.results]
         scores = [output.relevance_score for output in response.results]
         sorted_docs = []
-        for idx, score in zip(indices, scores):
+        for idx, score in zip(indices, scores, strict=False):
             doc = documents[idx]
             doc.score = score
             sorted_docs.append(documents[idx])

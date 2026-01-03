@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from haystack import component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -29,14 +29,14 @@ class VoyageTextEmbedder:
         self,
         model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        input_type: Optional[str] = None,
+        input_type: str | None = None,
         truncate: bool = True,
         prefix: str = "",
         suffix: str = "",
-        output_dimension: Optional[int] = None,
+        output_dimension: int | None = None,
         output_dtype: str = "float",
-        timeout: Optional[int] = None,
-        max_retries: Optional[int] = None,
+        timeout: int | None = None,
+        max_retries: int | None = None,
     ):
         """
         Create an VoyageTextEmbedder component.
@@ -101,7 +101,7 @@ class VoyageTextEmbedder:
 
         self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the component to a dictionary.
 
@@ -121,7 +121,7 @@ class VoyageTextEmbedder:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VoyageTextEmbedder":
+    def from_dict(cls, data: dict[str, Any]) -> "VoyageTextEmbedder":
         """
         Deserializes the component from a dictionary.
 
@@ -133,7 +133,7 @@ class VoyageTextEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    @component.output_types(embedding=List[float], meta=Dict[str, Any])
+    @component.output_types(embedding=list[float], meta=dict[str, Any])
     def run(self, text: str):
         """
         Embed a single string.

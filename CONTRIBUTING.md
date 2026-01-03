@@ -18,20 +18,18 @@ There are many ways to contribute to the Voyage Haystack Integration:
 
 2. Clone your fork locally and navigate to the project directory:
 
-   ```bash
-   cd voyage-embedders-haystack
-   ```
-
-3. Install [UV](https://docs.astral.sh/uv/) package installer:
-
     ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
+    cd voyage-embedders-haystack
     ```
 
-    Or on Windows (PowerShell):
-    ```powershell
-    powershell -ExecutionPolicy BypassPolicy -c "irm https://astral.sh/uv/install.ps1 | iex"
-    ```
+    Note: This project requires Python 3.10 or higher.
+
+3. The project uses [uv](https://github.com/astral-sh/uv) for dependency management. First, ensure uv is installed:
+
+   ```bash
+   # Install uv (if not already installed)
+   pip install uv
+   ```
 
 4. Sync the project and install all dependencies:
 
@@ -40,6 +38,7 @@ There are many ways to contribute to the Voyage Haystack Integration:
     ```
 
     Or manually:
+
     ```bash
     uv sync --all-extras
     ```

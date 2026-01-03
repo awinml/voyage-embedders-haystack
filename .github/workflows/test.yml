@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
     - name: Support longpaths
@@ -48,7 +48,7 @@ jobs:
         cache-dependency-glob: "uv.lock"
 
     - name: Lint
-      if: matrix.python-version == '3.9' && runner.os == 'Linux'
+      if: matrix.python-version == '3.10' && runner.os == 'Linux'
       run: make lint-all
 
     - name: Run tests

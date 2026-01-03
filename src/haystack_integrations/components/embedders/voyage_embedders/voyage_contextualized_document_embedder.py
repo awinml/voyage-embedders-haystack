@@ -1,6 +1,7 @@
 import os
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any, cast
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -41,19 +42,19 @@ class VoyageContextualizedDocumentEmbedder:
         self,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
         model: str = "voyage-context-3",
-        input_type: Optional[str] = None,
+        input_type: str | None = None,
         prefix: str = "",
         suffix: str = "",
-        output_dimension: Optional[int] = None,
+        output_dimension: int | None = None,
         output_dtype: str = "float",
         batch_size: int = 32,
-        metadata_fields_to_embed: Optional[List[str]] = None,
+        metadata_fields_to_embed: list[str] | None = None,
         embedding_separator: str = "\n",
         source_id_field: str = "source_id",
-        chunk_fn: Optional[Callable] = None,
+        chunk_fn: Callable | None = None,
         progress_bar: bool = True,
-        timeout: Optional[int] = None,
-        max_retries: Optional[int] = None,
+        timeout: int | None = None,
+        max_retries: int | None = None,
     ):
         """
         Create a VoyageContextualizedDocumentEmbedder component.
@@ -121,7 +122,7 @@ class VoyageContextualizedDocumentEmbedder:
 
         self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the component to a dictionary.
 
@@ -146,7 +147,7 @@ class VoyageContextualizedDocumentEmbedder:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VoyageContextualizedDocumentEmbedder":
+    def from_dict(cls, data: dict[str, Any]) -> "VoyageContextualizedDocumentEmbedder":
         """
         Deserializes the component from a dictionary.
 
@@ -158,7 +159,7 @@ class VoyageContextualizedDocumentEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    def _prepare_texts_to_embed(self, documents: List[Document]) -> List[str]:
+    def _prepare_texts_to_embed(self, documents: list[Document]) -> list[str]:
         """
         Prepare the texts to embed by concatenating the Document text with the metadata fields to embed.
         """
@@ -177,7 +178,7 @@ class VoyageContextualizedDocumentEmbedder:
             texts_to_embed.append(text_to_embed)
         return texts_to_embed
 
-    def _group_documents_by_source(self, documents: List[Document]) -> Tuple[Dict[str, List[Document]], List[str]]:
+    def _group_documents_by_source(self, documents: list[Document]) -> tuple[dict[str, list[Document]], list[str]]:
         """
         Group documents by their source_id field.
 
@@ -186,8 +187,8 @@ class VoyageContextualizedDocumentEmbedder:
             - grouped_documents: Dictionary mapping source_id to list of documents
             - source_order: List of source_ids in order they were first encountered
         """
-        grouped_docs: Dict[str, List[Document]] = defaultdict(list)
-        source_order: List[str] = []
+        grouped_docs: dict[str, list[Document]] = defaultdict(list)
+        source_order: list[str] = []
 
         for doc in documents:
             source_id = doc.meta.get(self.source_id_field)
@@ -206,7 +207,9 @@ class VoyageContextualizedDocumentEmbedder:
 
         return dict(grouped_docs), source_order
 
-    def _embed_batch(self, grouped_texts: List[List[str]], batch_size: int) -> Tuple[List[List[float]], Dict[str, Any]]:
+    def _embed_batch(
+        self, grouped_texts: list[list[str]], batch_size: int
+    ) -> tuple[list[list[float] | list[int]], dict[str, Any]]:
         """
         Embed groups of texts using contextualized embeddings.
 
@@ -218,8 +221,8 @@ class VoyageContextualizedDocumentEmbedder:
             Tuple of (all_embeddings, metadata) where all_embeddings is a flat list of embeddings
             corresponding to the flattened input texts.
         """
-        all_embeddings = []
-        meta: Dict[str, Any] = {}
+        all_embeddings: list[list[float] | list[int]] = []
+        meta: dict[str, Any] = {}
         meta["total_tokens"] = 0
 
         for i in tqdm(
@@ -230,7 +233,7 @@ class VoyageContextualizedDocumentEmbedder:
             batch = grouped_texts[i : i + batch_size]
 
             # Prepare API call parameters
-            api_params: Dict[str, Any] = {}
+            api_params: dict[str, Any] = {}
             api_params["inputs"] = batch
             api_params["model"] = self.model
 
@@ -253,8 +256,8 @@ class VoyageContextualizedDocumentEmbedder:
 
         return all_embeddings, meta
 
-    @component.output_types(documents=List[Document], meta=Dict[str, Any])
-    def run(self, documents: List[Document]):
+    @component.output_types(documents=list[Document], meta=dict[str, Any])
+    def run(self, documents: list[Document]):
         """
         Embed a list of Documents using contextualized embeddings.
 
@@ -296,7 +299,7 @@ class VoyageContextualizedDocumentEmbedder:
         embeddings, meta = self._embed_batch(grouped_texts, batch_size=self.batch_size)
 
         # Assign embeddings back to documents
-        for doc, emb in zip(doc_mapping, embeddings):
-            doc.embedding = emb
+        for doc, emb in zip(doc_mapping, embeddings, strict=False):
+            doc.embedding = cast(list[float], emb)
 
         return {"documents": documents, "meta": meta}
