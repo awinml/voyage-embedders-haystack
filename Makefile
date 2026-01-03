@@ -7,7 +7,7 @@ help:
 	@echo "  make test-cov                 - Run tests with coverage collection"
 	@echo "  make cov-report               - Generate coverage reports (xml, html)"
 	@echo "  make cov                      - Run tests and generate coverage reports"
-	@echo "  make lint-typing              - Type check with mypy"
+	@echo "  make lint-typing              - Type check with ty"
 	@echo "  make lint-style               - Lint with ruff and black (check only)"
 	@echo "  make lint-fmt                 - Format code and lint with auto-fixes"
 	@echo "  make lint-all                 - Run formatting, linting, and type checking"
@@ -35,7 +35,7 @@ cov-report:
 cov: test-cov cov-report
 
 lint-typing:
-	uv run mypy --install-types --non-interactive --explicit-package-bases src/ tests
+	uv run ty check src/ tests
 
 lint-style:
 	uv run ruff check .

@@ -17,7 +17,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3",  
+  "Programming Language :: Python :: 3",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
@@ -39,7 +39,7 @@ dev = [
   "pytest",
   "datasets",
   "black>=23.1.0",
-  "mypy>=1.0.0",
+  "ty>=0.0.8,<0.1.0",
   "ruff>=0.0.243",
 ]
 
@@ -151,3 +151,17 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["haystack.*", "haystack_integrations.*", "pytest.*"]
 ignore_missing_imports = true
+
+[tool.ty.environment]
+root = ["src", "tests"]
+
+[tool.ty.src]
+include = ["src", "tests"]
+respect-ignore-files = true
+
+# Relax strict type checking for test files where MagicMock is used
+[[tool.ty.overrides]]
+include = ["tests/**"]
+
+[tool.ty.overrides.rules]
+invalid-assignment = "ignore"
