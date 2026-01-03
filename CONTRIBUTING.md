@@ -69,7 +69,7 @@ This project uses:
 
 - [Black](https://black.readthedocs.io/) for code formatting.
 - [Ruff](https://docs.astral.sh/ruff/) for linting.
-- [Mypy](https://mypy.readthedocs.io/) for type checking.
+- [ty](https://docs.astral.sh/ty/) for type checking (Astral's Rust-based type checker).
 
 Format and lint your code before submitting:
 
@@ -77,7 +77,7 @@ Format and lint your code before submitting:
 make lint-all
 ```
 
-This command will format code with Black, apply auto-fixes with Ruff, and check typing with MyPy.
+This command will format code with Black, apply auto-fixes with Ruff, and check typing with ty.
 
 ### Useful Development Commands
 
@@ -88,6 +88,107 @@ This command will format code with Black, apply auto-fixes with Ruff, and check 
 - `make lint-fmt` - Format code and apply auto-fixes.
 - `make lint-style` - Lint only (no changes).
 - `make lint-typing` - Type check only.
+
+## Releasing a New Version
+
+This project follows [Semantic Versioning](https://semver.org/). Releases are automated via GitHub Actions when a version tag is pushed.
+
+### Preparation Steps
+
+1. **Create a release branch** from `main`:
+
+   ```bash
+   git checkout -b release/v1.x.y
+   ```
+
+2. **Update the version** in `pyproject.toml`:
+
+   ```toml
+   version = "1.x.y"
+   ```
+
+3. **Update the README** with a new entry in the "What's New" section:
+
+   ```markdown
+   - **[v1.x.y - MM/DD/YY]:**
+     - Brief description of major changes
+   ```
+
+4. **Run all checks** to ensure quality:
+
+   ```bash
+   make lint-all  # Format, lint, and type check
+   make test      # Run all tests
+   ```
+
+5. **Commit and push** these changes:
+
+   ```bash
+   git commit -am "chore: Bump version to 1.x.y"
+   git push origin release/v1.x.y
+   ```
+
+### Creating the Release
+
+#### **Option 1: GitHub Web UI (Recommended for simplicity)**
+
+1. **Create a Pull Request** on GitHub and ensure all CI checks pass.
+
+2. **Merge the PR** to `main` once approved.
+
+3. **Create Release via GitHub**:
+   - Go to [Releases](https://github.com/awinml/voyage-embedders-haystack/releases) page
+   - Click "Create a new release"
+   - Click "Choose a tag" and type `v1.x.y` (GitHub will create the tag automatically)
+   - Fill in the release title: `Version 1.x.y`
+   - Add release notes/description describing major changes
+   - Click "Publish release"
+
+#### **Option 2: Command Line (For automation/scripting)**
+
+1. **Create a Pull Request** on GitHub and ensure all CI checks pass.
+
+2. **Merge the PR** to `main` once approved.
+
+3. **Create a git tag** on the `main` branch:
+
+   ```bash
+   git checkout main
+   git pull origin main
+   git tag v1.x.y
+   git push origin --tags
+   ```
+
+4. **Create Release on GitHub** (optional, for documentation):
+   - The tag push triggers the workflow automatically
+   - You can manually create a release afterwards for release notes, or use GitHub CLI:
+
+   ```bash
+   gh release create v1.x.y --title "Version 1.x.y" --notes "Release notes here"
+   ```
+
+### Automated Deployment
+
+When a tag matching the pattern `v[0-9].[0-9]+.[0-9]+*` is created (via either method):
+
+- GitHub Actions will automatically:
+  1. Build the source distribution and wheel using uv
+  2. Publish to PyPI using Trusted Publishing
+  3. Make the release publicly available (check in 2-5 minutes)
+
+### Versioning Guidelines
+
+- **Patch release** (1.x.Y): Bug fixes, documentation updates
+- **Minor release** (1.X.0): New features, backward compatible
+- **Major release** (X.0.0): Breaking changes, API modifications
+
+### Verifying the Release
+
+After the GitHub Actions workflow completes:
+
+1. Check [PyPI](https://pypi.org/project/voyage-embedders-haystack/) to confirm the release is published.
+2. Verify the package can be installed: `pip install voyage-embedders-haystack==1.x.y`.
+3. Check the [GitHub Releases](https://github.com/awinml/voyage-embedders-haystack/releases) page.
 
 ## Community Guidelines
 

@@ -7,9 +7,9 @@
 [![License](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE)
 [![Tests](https://github.com/awinml/voyage-embedders-haystack/workflows/Test/badge.svg)](https://github.com/awinml/voyage-embedders-haystack/actions)
 [![Coverage](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)
-[![Types](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
+[![Types](https://img.shields.io/badge/types-ty-blue.svg)](https://docs.astral.sh/ty/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Code Style](https://img.shields.io/badge/Code%20Style-black-000000.svg)](https://github.com/psf/black)
+[![Style](https://img.shields.io/badge/Style-black-000000.svg)](https://github.com/psf/black)
 
 </div>
 
@@ -50,6 +50,11 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
 - **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.
 
 - **[v1.0.0 - 21/11/23]:** Added `VoyageTextEmbedder` and `VoyageDocument Embedder` to embed strings and documents.
+
+## Requirements
+
+- Python 3.10 or higher
+- [Voyage AI API Key](https://voyageai.com/)
 
 ## Installation
 
