@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.21,<0.10.0"]
+build-backend = "uv_build"
 
 [project]
 name = "voyage-embedders-haystack"
@@ -10,8 +10,8 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
 keywords = ["Haystack", "VoyageAI", "Embedding", "Rankers", "Semantic Search"]
-authors = [{ name = "Ashwin Mathur", email = "" }]
-maintainers = [{ name = "Ashwin Mathur", email = "" }]
+authors = [{ name = "Ashwin Mathur" }]
+maintainers = [{ name = "Ashwin Mathur" }]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Science/Research",
@@ -28,43 +28,23 @@ Documentation = "https://github.com/awinml/voyage-embedders-haystack#readme"
 Issues = "https://github.com/awinml/voyage-embedders-haystack/issues"
 Source = "https://github.com/awinml/voyage-embedders-haystack"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/haystack_integrations"]
+[tool.uv.build-backend]
+module-name = "haystack_integrations"
+namespace = true
 
-[tool.hatch.envs.default]
-dependencies = ["coverage[toml]>=6.5", "coveralls", "pytest", "datasets"]
-
-[tool.hatch.envs.default.scripts]
-test = "pytest {args:tests}"
-test-cov = "coverage run -m pytest {args:tests}"
-cov-report = ["- coverage combine", "coverage xml", "coverage html"]
-cov = ["test-cov", "cov-report"]
-example-text-embedder = "python examples/text_embedder_example.py"
-example-doc-embedder = "python examples/document_embedder_example.py"
-example-semantic-search = "python examples/semantic_search_pipeline_example.py"
-example-reranker = "python examples/reranker_example.py"
-test-examples = [
-  "example-text-embedder",
-  "example-doc-embedder",
-  "example-semantic-search",
-  "example-reranker",
+[dependency-groups]
+dev = [
+  "coverage[toml]>=6.5",
+  "coveralls",
+  "pytest",
+  "datasets",
+  "black>=23.1.0",
+  "mypy>=1.0.0",
+  "ruff>=0.0.243",
 ]
 
-[[tool.hatch.envs.all.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12"]
-
-[tool.hatch.envs.lint]
-detached = true
-dependencies = ["black>=23.1.0", "mypy>=1.0.0", "ruff>=0.0.243"]
-
-[tool.hatch.envs.lint.scripts]
-typing = "mypy --install-types --non-interactive --explicit-package-bases {args:src/ tests}"
-style = ["ruff check {args:.}", "black --check --diff {args:.}"]
-fmt = ["black {args:.}", "ruff check --fix {args:.}", "style"]
-all = ["fmt", "typing"]
-
-[tool.hatch.metadata]
-allow-direct-references = true
+[tool.uv]
+managed = true
 
 [tool.black]
 target-version = ["py37"]

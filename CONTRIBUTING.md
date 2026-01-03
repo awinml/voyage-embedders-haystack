@@ -22,19 +22,29 @@ There are many ways to contribute to the Voyage Haystack Integration:
    cd voyage-embedders-haystack
    ```
 
-3. Install [Hatch](https://hatch.pypa.io/) project manager:
+3. Install [UV](https://docs.astral.sh/uv/) package installer:
 
-   ```bash
-   pip install hatch
-   ```
+    ```bash
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
 
-4. Install the project in development mode:
+    Or on Windows (PowerShell):
+    ```powershell
+    powershell -ExecutionPolicy BypassPolicy -c "irm https://astral.sh/uv/install.ps1 | iex"
+    ```
 
-   ```bash
-   hatch shell
-   ```
+4. Sync the project and install all dependencies:
 
-   This creates an isolated virtual environment with project dependencies and the project installed in editable mode.
+    ```bash
+    make sync
+    ```
+
+    Or manually:
+    ```bash
+    uv sync --all-extras
+    ```
+
+    This creates an isolated virtual environment with project dependencies and the project installed in editable mode.
 
 ## Code Quality Standards
 
@@ -43,13 +53,13 @@ There are many ways to contribute to the Voyage Haystack Integration:
 Before submitting a pull request, ensure all tests pass:
 
 ```bash
-hatch run test
+make test
 ```
 
 To run tests with coverage:
 
 ```bash
-hatch run cov
+make cov
 ```
 
 Add tests for any new functionality or bug fixes.
@@ -65,20 +75,20 @@ This project uses:
 Format and lint your code before submitting:
 
 ```bash
-hatch run lint:all
+make lint-all
 ```
 
 This command will format code with Black, apply auto-fixes with Ruff, and check typing with MyPy.
 
 ### Useful Development Commands
 
-- `hatch shell` - Activate development environment.
-- `hatch run test` - Run tests.
-- `hatch run cov` - Run tests with coverage.
-- `hatch run lint:all` - Run all code quality checks.
-- `hatch run lint:fmt` - Format code and apply auto-fixes.
-- `hatch run lint:style` - Lint only.
-- `hatch run lint:typing` - Type check only.
+- `make sync` - Create/sync development environment.
+- `make test` - Run tests.
+- `make cov` - Run tests with coverage.
+- `make lint-all` - Run all code quality checks and formatting.
+- `make lint-fmt` - Format code and apply auto-fixes.
+- `make lint-style` - Lint only (no changes).
+- `make lint-typing` - Type check only.
 
 ## Community Guidelines
 

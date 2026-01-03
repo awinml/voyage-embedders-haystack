@@ -41,19 +41,22 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install Hatch
-      run: pip install --upgrade hatch
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
 
     - name: Lint
       if: matrix.python-version == '3.9' && runner.os == 'Linux'
-      run: hatch run lint:all
+      run: make lint-all
 
     - name: Run tests
-      run: hatch run cov
+      run: make cov
 
     - name: Run tests-examples
       if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-      run: hatch run test-examples
+      run: make test-examples
 
     - name: Coveralls Parallel
       # We upload only coverage for ubuntu as handling both os
