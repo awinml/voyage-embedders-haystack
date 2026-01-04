@@ -67,8 +67,7 @@ Add tests for any new functionality or bug fixes.
 
 This project uses:
 
-- [Black](https://black.readthedocs.io/) for code formatting.
-- [Ruff](https://docs.astral.sh/ruff/) for linting.
+- [Ruff](https://docs.astral.sh/ruff/) for code formatting and linting.
 - [ty](https://docs.astral.sh/ty/) for type checking (Astral's Rust-based type checker).
 
 Format and lint your code before submitting:
@@ -77,7 +76,7 @@ Format and lint your code before submitting:
 make lint-all
 ```
 
-This command will format code with Black, apply auto-fixes with Ruff, and check typing with ty.
+This command will format code with Ruff, apply auto-fixes with Ruff, and check typing with ty.
 
 ### Useful Development Commands
 

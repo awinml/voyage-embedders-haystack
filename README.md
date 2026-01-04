@@ -9,7 +9,6 @@
 [![Coverage](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)
 [![Types](https://img.shields.io/badge/types-ty-blue.svg)](https://docs.astral.sh/ty/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Style](https://img.shields.io/badge/Style-black-000000.svg)](https://github.com/psf/black)
 
 </div>
 

@@ -8,7 +8,7 @@ help:
 	@echo "  make cov-report               - Generate coverage reports (xml, html)"
 	@echo "  make cov                      - Run tests and generate coverage reports"
 	@echo "  make lint-typing              - Type check with ty"
-	@echo "  make lint-style               - Lint with ruff and black (check only)"
+	@echo "  make lint-style               - Lint with ruff (check only)"
 	@echo "  make lint-fmt                 - Format code and lint with auto-fixes"
 	@echo "  make lint-all                 - Run formatting, linting, and type checking"
 	@echo "  make example-text-embedder    - Run text embedder example"
@@ -39,12 +39,10 @@ lint-typing:
 
 lint-style:
 	uv run ruff check .
-	uv run black --check --diff .
 
 lint-fmt:
-	uv run black .
+	uv run ruff format .
 	uv run ruff check --fix .
-	uv run black --check --diff .
 
 lint-all: lint-fmt lint-typing
 

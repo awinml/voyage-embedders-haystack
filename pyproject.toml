@@ -38,23 +38,18 @@ dev = [
   "coveralls",
   "pytest",
   "datasets",
-  "black>=23.1.0",
   "ty>=0.0.8,<0.1.0",
-  "ruff>=0.0.243",
+  "ruff==0.14.10",
+  "pre-commit>=4.5.0,<5",
 ]
 
 [tool.uv]
 managed = true
 
-[tool.black]
-target-version = ["py310"]
-line-length = 120
-skip-string-normalization = true
-
 [tool.ruff]
 target-version = "py310"
 line-length = 120
-lint.select = [
+select = [
   "A",
   "ARG",
   "B",
@@ -81,7 +76,7 @@ lint.select = [
   "W",
   "YTT",
 ]
-lint.ignore = [
+ignore = [
   # Allow non-abstract empty methods in abstract base classes
   "B027",
   # Allow boolean positional values in function calls, like `dict.get(... True)`
@@ -104,18 +99,18 @@ lint.ignore = [
   "FBT001",
   "FBT002",
 ]
-lint.unfixable = [
+unfixable = [
   # Don't touch unused imports
   "F401",
 ]
 
-[tool.ruff.lint.isort]
+[tool.ruff.isort]
 known-first-party = ["voyage_embedders"]
 
-[tool.ruff.lint.flake8-tidy-imports]
+[tool.ruff.flake8-tidy-imports]
 ban-relative-imports = "parents"
 
-[tool.ruff.lint.per-file-ignores]
+[tool.ruff.per-file-ignores]
 # Tests can use magic values, assertions, and relative imports
 "tests/**/*" = ["PLR2004", "S101", "TID252"]
 
