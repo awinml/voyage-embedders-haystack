@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any, cast
+from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -300,6 +300,6 @@ class VoyageContextualizedDocumentEmbedder:
 
         # Assign embeddings back to documents
         for doc, emb in zip(doc_mapping, embeddings, strict=False):
-            doc.embedding = cast(list[float], emb)
+            doc.embedding = emb
 
         return {"documents": documents, "meta": meta}

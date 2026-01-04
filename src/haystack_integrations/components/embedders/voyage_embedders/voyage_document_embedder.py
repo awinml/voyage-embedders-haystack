@@ -1,5 +1,5 @@
 import os
-from typing import Any, cast
+from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -229,6 +229,6 @@ class VoyageDocumentEmbedder:
         embeddings, meta = self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
 
         for doc, emb in zip(documents, embeddings, strict=False):
-            doc.embedding = cast(list[float], emb)
+            doc.embedding = emb
 
         return {"documents": documents, "meta": meta}
