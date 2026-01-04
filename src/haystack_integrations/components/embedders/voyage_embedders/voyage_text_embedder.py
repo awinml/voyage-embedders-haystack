@@ -133,7 +133,7 @@ class VoyageTextEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    @component.output_types(embedding=list[float], meta=dict[str, Any])
+    @component.output_types(embedding=list[float] | list[int], meta=dict[str, Any])
     def run(self, text: str):
         """
         Embed a single string.
