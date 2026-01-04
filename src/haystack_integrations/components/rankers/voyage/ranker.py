@@ -181,7 +181,7 @@ class VoyageRanker:
         indices = [output.index for output in response.results]
         scores = [output.relevance_score for output in response.results]
         sorted_docs = []
-        for idx, score in zip(indices, scores, strict=False):
+        for idx, score in zip(indices, scores, strict=True):
             doc = documents[idx]
             doc.score = score
             sorted_docs.append(documents[idx])
