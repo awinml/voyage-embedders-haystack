@@ -228,7 +228,7 @@ class VoyageDocumentEmbedder:
 
         embeddings, meta = self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
 
-        for doc, emb in zip(documents, embeddings, strict=False):
+        for doc, emb in zip(documents, embeddings, strict=True):
             doc.embedding = emb
 
         return {"documents": documents, "meta": meta}

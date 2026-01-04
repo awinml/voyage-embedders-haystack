@@ -299,7 +299,7 @@ class VoyageContextualizedDocumentEmbedder:
         embeddings, meta = self._embed_batch(grouped_texts, batch_size=self.batch_size)
 
         # Assign embeddings back to documents
-        for doc, emb in zip(doc_mapping, embeddings, strict=False):
+        for doc, emb in zip(doc_mapping, embeddings, strict=True):
             doc.embedding = emb
 
         return {"documents": documents, "meta": meta}
