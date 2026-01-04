@@ -133,7 +133,7 @@ class VoyageTextEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    @component.output_types(embedding=list[float] | list[int], meta=dict[str, Any])
+    @component.output_types(embedding=list[float], meta=dict[str, Any])
     def run(self, text: str):
         """
         Embed a single string.
@@ -166,4 +166,8 @@ class VoyageTextEmbedder:
         embedding = response.embeddings[0]
         meta = {"total_tokens": response.total_tokens}
 
+        # Note: output_dtype can produce list[int] for quantized types (int8, uint8, binary, ubinary),
+        # but we declare the output type as list[float] for Haystack pipeline compatibility.
+        # The component respects the output_dtype parameter for API optimization, but the type contract
+        # is always list[float] to ensure compatibility with downstream components like Retriever.
         return {"embedding": embedding, "meta": meta}
