@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE)
 [![Tests](https://github.com/awinml/voyage-embedders-haystack/workflows/Test/badge.svg)](https://github.com/awinml/voyage-embedders-haystack/actions)
 [![Coverage](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/awinml/voyage-embedders-haystack/main.svg)](https://results.pre-commit.ci/latest/github/awinml/voyage-embedders-haystack/main)
 [![Types](https://img.shields.io/badge/types-ty-blue.svg)](https://docs.astral.sh/ty/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
