@@ -1,4 +1,5 @@
 import os
+from unittest.mock import Mock, patch
 
 import pytest
 from haystack import Document
@@ -260,6 +261,66 @@ class TestVoyageDocumentEmbedder:
 
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
+
+    @pytest.mark.unit
+    def test_run_with_mocked_api(self):
+        docs = [
+            Document(content="I love cheese", meta={"topic": "Cuisine"}),
+            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
+        ]
+
+        embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
+            prefix="prefix ",
+            suffix=" suffix",
+            metadata_fields_to_embed=["topic"],
+            embedding_separator=" | ",
+            api_key=Secret.from_token("fake-api-key"),
+        )
+
+        # Mock the client.embed method
+        mock_response = Mock()
+        mock_response.embeddings = [
+            [0.1] * 1024,  # 1024 dimensions
+            [0.4] * 1024,  # 1024 dimensions
+        ]
+        mock_response.total_tokens = 18
+
+        with patch.object(embedder.client, "embed", return_value=mock_response):
+            result = embedder.run(documents=docs)
+
+        documents_with_embeddings = result["documents"]
+        assert isinstance(documents_with_embeddings, list)
+        assert len(documents_with_embeddings) == 2
+        for doc in documents_with_embeddings:
+            assert isinstance(doc, Document)
+            assert isinstance(doc.embedding, list)
+            assert len(doc.embedding) == 1024
+        assert result["meta"]["total_tokens"] == 18
+
+    @pytest.mark.unit
+    def test_run_with_mocked_api_batch_processing(self):
+        docs = [Document(content=f"content {i}") for i in range(5)]
+
+        embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
+            api_key=Secret.from_token("fake-api-key"),
+            batch_size=2,
+        )
+
+        # Mock the client.embed method to return embeddings for each batch
+        def mock_embed(*args, **kwargs):
+            mock_response = Mock()
+            texts = kwargs.get("texts", args[0] if args else [])
+            mock_response.embeddings = [[0.1] * 1024 for _ in range(len(texts))]
+            mock_response.total_tokens = len(texts) * 6
+            return mock_response
+
+        with patch.object(embedder.client, "embed", side_effect=mock_embed):
+            result = embedder.run(documents=docs)
+
+        assert len(result["documents"]) == 5
+        assert all(len(doc.embedding) == 1024 for doc in result["documents"])
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
