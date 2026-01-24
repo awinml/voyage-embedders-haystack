@@ -467,3 +467,67 @@ class TestVoyageMultimodalEmbedder:
         assert len(result["embeddings"]) == 1
         assert len(result["embeddings"][0]) == 1024
         assert all(isinstance(x, float) for x in result["embeddings"][0])
+
+    @pytest.mark.unit
+    def test_init_fails_without_pillow(self, monkeypatch):
+        """Test that initialization fails when pillow is not available."""
+        # Mock PIL_AVAILABLE as False
+        monkeypatch.setattr(
+            "haystack_integrations.components.embedders.voyage_embedders.voyage_multimodal_embedder.PIL_AVAILABLE",
+            False,
+        )
+
+        with pytest.raises(ImportError, match="'pillow' package is required"):
+            VoyageMultimodalEmbedder(api_key=Secret.from_token("fake-api-key"))
+
+    @pytest.mark.unit
+    def test_run_with_video_objects(self, monkeypatch):
+        """Test run method with video content."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageMultimodalEmbedder(progress_bar=False)
+
+        # Create a mock Video object
+        mock_video = MagicMock(spec=Video)
+
+        # Mock the client
+        mock_response = MagicMock()
+        mock_response.embeddings = [[0.1, 0.2, 0.3]]
+        mock_response.text_tokens = 2
+        mock_response.image_pixels = 0
+        mock_response.video_pixels = 1000000
+        mock_response.total_tokens = 52
+
+        embedder.client.multimodal_embed = MagicMock(return_value=mock_response)
+
+        result = embedder.run(inputs=[["Describe this video:", mock_video]])
+
+        assert len(result["embeddings"]) == 1
+        assert result["meta"]["video_pixels"] == 1000000
+        assert result["meta"]["total_tokens"] == 52
+
+        # Verify the video was passed correctly
+        call_kwargs = embedder.client.multimodal_embed.call_args[1]
+        inputs = call_kwargs["inputs"]
+        assert len(inputs) == 1
+        assert inputs[0][0] == "Describe this video:"
+        assert inputs[0][1] is mock_video
+
+    @pytest.mark.unit
+    def test_convert_content_item_handles_video_import_missing(self, monkeypatch):
+        """Test that convert_content_item handles case when VIDEO_AVAILABLE is False."""
+        embedder = VoyageMultimodalEmbedder(api_key=Secret.from_token("fake-api-key"))
+
+        # Mock VIDEO_AVAILABLE as False and Video as None
+        monkeypatch.setattr(
+            "haystack_integrations.components.embedders.voyage_embedders.voyage_multimodal_embedder.VIDEO_AVAILABLE",
+            False,
+        )
+        monkeypatch.setattr(
+            "haystack_integrations.components.embedders.voyage_embedders.voyage_multimodal_embedder.Video",
+            None,
+        )
+
+        # Try to convert an unsupported type (not str, ByteStream, Image, or Video)
+        with pytest.raises(TypeError, match="Unsupported content type"):
+            embedder._convert_content_item({"unsupported": "dict"})

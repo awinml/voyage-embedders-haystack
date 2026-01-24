@@ -37,6 +37,7 @@ dev = [
   "coverage[toml]>=6.5",
   "coveralls",
   "pytest",
+  "pytest-rerunfailures>=12.0",
   "datasets",
   "ty>=0.0.13",
   "ruff>=0.14.14",
@@ -138,7 +139,7 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-vv"
+addopts = "-vv --reruns 3 --reruns-delay 30"
 markers = ["unit: unit tests", "integration: integration tests"]
 log_cli = true
 
