@@ -1,6 +1,6 @@
 import io
 import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Union
 
 from haystack import component, default_from_dict, default_to_dict, logging
 from haystack.dataclasses import ByteStream
@@ -58,7 +58,7 @@ class VoyageMultimodalEmbedder:
     result = embedder.run(inputs=[["Describe this image:", image_bytes]])
     print(result["embeddings"][0][:5])
 
-    # Video embedding (requires voyageai >= 0.3.6)
+    # Video embedding
     from voyageai.video_utils import Video
     video = Video.from_path("video.mp4", model="voyage-multimodal-3.5")
     result = embedder.run(inputs=[["Describe this video:", video]])
@@ -70,14 +70,14 @@ class VoyageMultimodalEmbedder:
         self,
         model: str = "voyage-multimodal-3.5",
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        input_type: Optional[str] = None,
+        input_type: str | None = None,
         truncate: bool = True,
-        output_dimension: Optional[int] = None,
-        output_dtype: Optional[str] = None,
+        output_dimension: int | None = None,
+        output_dtype: str | None = None,
         batch_size: int = 8,
         progress_bar: bool = True,
-        timeout: Optional[int] = None,
-        max_retries: Optional[int] = None,
+        timeout: int | None = None,
+        max_retries: int | None = None,
     ):
         """
         Create a VoyageMultimodalEmbedder component.
@@ -133,11 +133,9 @@ class VoyageMultimodalEmbedder:
         if max_retries is None:
             max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
-        self._timeout = timeout
-        self._max_retries = max_retries
         self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the component to a dictionary.
 
@@ -157,7 +155,7 @@ class VoyageMultimodalEmbedder:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VoyageMultimodalEmbedder":
+    def from_dict(cls, data: dict[str, Any]) -> "VoyageMultimodalEmbedder":
         """
         Deserializes the component from a dictionary.
 
@@ -169,7 +167,7 @@ class VoyageMultimodalEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    def _convert_content_item(self, item: MultimodalContent) -> Union[str, "Image.Image", "Video"]:
+    def _convert_content_item(self, item: object) -> Union[str, "Image.Image", "Video"]:
         """
         Convert a content item to a format accepted by the VoyageAI SDK.
 
@@ -192,7 +190,7 @@ class VoyageMultimodalEmbedder:
             msg = f"Unsupported content type: {type(item)}. Expected str, PIL.Image.Image, Video, or ByteStream."
             raise TypeError(msg)
 
-    def _prepare_inputs(self, inputs: List[List[MultimodalContent]]) -> List[List[Union[str, "Image.Image", "Video"]]]:
+    def _prepare_inputs(self, inputs: list[list[MultimodalContent]]) -> list[list[Union[str, "Image.Image", "Video"]]]:
         """
         Prepare inputs for the VoyageAI multimodal API.
 
@@ -208,8 +206,8 @@ class VoyageMultimodalEmbedder:
         return prepared
 
     def _embed_batch(
-        self, inputs: List[List[Union[str, "Image.Image", "Video"]]], batch_size: int
-    ) -> tuple[List[List[float]], Dict[str, Any]]:
+        self, inputs: list[list[Union[str, "Image.Image", "Video"]]], batch_size: int
+    ) -> tuple[list[list[float]], dict[str, Any]]:
         """
         Embed inputs in batches.
 
@@ -220,8 +218,8 @@ class VoyageMultimodalEmbedder:
         :returns:
             Tuple of (embeddings, metadata).
         """
-        all_embeddings: List[List[float]] = []
-        meta: Dict[str, Any] = {
+        all_embeddings: list[list[float]] = []
+        meta: dict[str, Any] = {
             "text_tokens": 0,
             "image_pixels": 0,
             "video_pixels": 0,
@@ -236,7 +234,7 @@ class VoyageMultimodalEmbedder:
             batch = inputs[i : i + batch_size]
 
             # Build API call parameters
-            api_params: Dict[str, Any] = {
+            api_params: dict[str, Any] = {
                 "inputs": batch,
                 "model": self.model,
                 "truncation": self.truncate,
@@ -259,10 +257,10 @@ class VoyageMultimodalEmbedder:
 
         return all_embeddings, meta
 
-    @component.output_types(embeddings=List[List[float]], meta=Dict[str, Any])
+    @component.output_types(embeddings=list[list[float]], meta=dict[str, Any])
     def run(
         self,
-        inputs: List[List[MultimodalContent]],
+        inputs: list[list[MultimodalContent]],
     ):
         """
         Embed multimodal inputs.

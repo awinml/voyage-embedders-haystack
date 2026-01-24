@@ -1,6 +1,6 @@
 import io
 import os
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from haystack.dataclasses import ByteStream
@@ -388,10 +388,16 @@ class TestVoyageMultimodalEmbedder:
         monkeypatch.setenv("VOYAGE_TIMEOUT", "60")
         monkeypatch.setenv("VOYAGE_MAX_RETRIES", "10")
 
-        embedder = VoyageMultimodalEmbedder()
+        with patch(
+            "haystack_integrations.components.embedders.voyage_embedders.voyage_multimodal_embedder.Client"
+        ) as mock_client:
+            VoyageMultimodalEmbedder()
 
-        assert embedder._timeout == 60
-        assert embedder._max_retries == 10
+            mock_client.assert_called_once_with(
+                api_key="fake-api-key",
+                max_retries=10,
+                timeout=60,
+            )
 
     @pytest.mark.unit
     def test_convert_content_item_video(self):
