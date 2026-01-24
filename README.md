@@ -19,6 +19,11 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
 
 #### What's New
 
+- **[v1.9.0 - 24/01/26]:**
+
+  - The new `VoyageMultimodalEmbedder` component supports Voyage's multimodal embedding model (`voyage-multimodal-3.5`).
+  - Multimodal embeddings can encode text, images, and videos into a shared vector space for cross-modal similarity search.
+
 - **[v1.8.0 - 07/11/25]:**
 
   - The new `VoyageContextualizedDocumentEmbedder` component supports Voyage's contextualized chunk embeddings.
@@ -69,14 +74,47 @@ You can use Voyage Embedding models with multiple components:
 - **[VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py)**: For generating embeddings for queries.
 - **[VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py)**: For creating semantic embeddings for documents in your indexing pipeline.
 - **[VoyageContextualizedDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_contextualized_document_embedder.py)**: For creating contextualized embeddings where document chunks are embedded together to preserve context and improve retrieval accuracy.
+- **[VoyageMultimodalEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_multimodal_embedder.py)**: For creating multimodal embeddings that can encode text, images, and videos into a shared vector space.
 
 The Voyage Reranker models can be used with the [VoyageRanker](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/rankers/voyage/ranker.py) component.
+
+### Multimodal Embeddings
+
+The `VoyageMultimodalEmbedder` uses Voyage's multimodal embedding model (`voyage-multimodal-3.5`) to encode text, images, and videos into a shared vector space. This enables cross-modal similarity search where you can find images using text queries or find related content across different modalities.
+
+**Key features:**
+
+- Supports text, images (PIL Images, ByteStream), and videos
+- Inputs can combine multiple modalities (e.g., text + image)
+- Variable output dimensions: 256, 512, 1024 (default), 2048
+- Recommended model: `voyage-multimodal-3.5`
+
+**Usage example:**
+
+```python
+from haystack.dataclasses import ByteStream
+from haystack_integrations.components.embedders.voyage_embedders import VoyageMultimodalEmbedder
+from voyageai.video_utils import Video
+
+# Text-only embedding
+embedder = VoyageMultimodalEmbedder(model="voyage-multimodal-3.5")
+result = embedder.run(inputs=[["What is in this image?"]])
+
+# Mixed text and image embedding
+image_bytes = ByteStream.from_file_path("image.jpg")
+result = embedder.run(inputs=[["Describe this image:", image_bytes]])
+
+# Video embedding
+video = Video.from_path("video.mp4", model="voyage-multimodal-3.5")
+result = embedder.run(inputs=[["Describe this video:", video]])
+```
 
 ### Contextualized Chunk Embeddings
 
 The `VoyageContextualizedDocumentEmbedder` uses Voyage's contextualized embedding models to encode document chunks "in context" with other chunks from the same document. This approach preserves semantic relationships between chunks and reduces context loss, leading to improved retrieval accuracy.
 
 **Key features:**
+
 - Documents are grouped by a metadata field (default: `source_id`)
 - Chunks from the same source document are embedded together
 - Maintains semantic connections between related chunks

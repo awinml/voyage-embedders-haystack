@@ -512,6 +512,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run(self):
         docs = [
             Document(content="Introduction to quantum computing.", meta={"source_id": "doc1", "topic": "Quantum"}),
@@ -531,8 +532,8 @@ class TestVoyageContextualizedDocumentEmbedder:
             suffix=" suffix",
             metadata_fields_to_embed=["topic"],
             embedding_separator=" | ",
-            timeout=600,
-            max_retries=1200,
+            timeout=120,
+            max_retries=10,
         )
 
         result = embedder.run(documents=docs)
@@ -552,6 +553,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run_with_single_source(self):
         docs = [
             Document(content="First chunk of content.", meta={"source_id": "single_doc"}),
