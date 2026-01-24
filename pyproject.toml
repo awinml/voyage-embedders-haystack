@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "voyage-embedders-haystack"
-dynamic = ["version"]
+version = "1.9.0"
 description = 'Haystack component to embed strings and Documents using VoyageAI Embedding models.'
 readme = "README.md"
 requires-python = ">=3.10"
@@ -31,9 +31,6 @@ Source = "https://github.com/awinml/voyage-embedders-haystack"
 [tool.uv.build-backend]
 module-name = "haystack_integrations"
 namespace = true
-
-[tool.uv.build-backend.version]
-source = "git-tag"
 
 [dependency-groups]
 dev = [
