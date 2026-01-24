@@ -18,30 +18,32 @@ There are many ways to contribute to the Voyage Haystack Integration:
 
 2. Clone your fork locally and navigate to the project directory:
 
-   ```bash
-   cd voyage-embedders-haystack
-   ```
+    ```bash
+    cd voyage-embedders-haystack
+    ```
 
-3. Install [Hatch](https://hatch.pypa.io/) project manager:
+    Note: This project requires Python 3.10 or higher.
 
-   ```bash
-   pip install hatch
-   ```
-
-4. Install the project in development mode:
+3. The project uses [uv](https://github.com/astral-sh/uv) for dependency management. First, ensure uv is installed:
 
    ```bash
-   hatch shell
+   # Install uv (if not already installed)
+   pip install uv
    ```
 
-   This creates an isolated virtual environment with project dependencies and the project installed in editable mode.
+4. Sync the project and install all dependencies:
 
-5. Setup pre-commit hooks:
+    ```bash
+    make sync
+    ```
 
-   ```bash
-   pip install pre-commit
-   pre-commit install
-   ```
+    Or manually:
+
+    ```bash
+    uv sync --all-extras
+    ```
+
+    This creates an isolated virtual environment with project dependencies and the project installed in editable mode.
 
 ## Code Quality Standards
 
@@ -50,13 +52,13 @@ There are many ways to contribute to the Voyage Haystack Integration:
 Before submitting a pull request, ensure all tests pass:
 
 ```bash
-hatch run test
+make test
 ```
 
 To run tests with coverage:
 
 ```bash
-hatch run cov
+make cov
 ```
 
 Add tests for any new functionality or bug fixes.
@@ -65,27 +67,127 @@ Add tests for any new functionality or bug fixes.
 
 This project uses:
 
-- [Black](https://black.readthedocs.io/) for code formatting.
-- [Ruff](https://docs.astral.sh/ruff/) for linting.
-- [Mypy](https://mypy.readthedocs.io/) for type checking.
+- [Ruff](https://docs.astral.sh/ruff/) for code formatting and linting.
+- [ty](https://docs.astral.sh/ty/) for type checking (Astral's Rust-based type checker).
 
 Format and lint your code before submitting:
 
 ```bash
-hatch run lint:all
+make lint-all
 ```
 
-This command will format code with Black, apply auto-fixes with Ruff, and check typing with MyPy.
+This command will format code with Ruff, apply auto-fixes with Ruff, and check typing with ty.
 
 ### Useful Development Commands
 
-- `hatch shell` - Activate development environment.
-- `hatch run test` - Run tests.
-- `hatch run cov` - Run tests with coverage.
-- `hatch run lint:all` - Run all code quality checks.
-- `hatch run lint:fmt` - Format code and apply auto-fixes.
-- `hatch run lint:style` - Lint only.
-- `hatch run lint:typing` - Type check only.
+- `make sync` - Create/sync development environment.
+- `make test` - Run tests.
+- `make cov` - Run tests with coverage.
+- `make lint-all` - Run all code quality checks and formatting.
+- `make lint-fmt` - Format code and apply auto-fixes.
+- `make lint-style` - Lint only (no changes).
+- `make lint-typing` - Type check only.
+
+## Releasing a New Version
+
+This project follows [Semantic Versioning](https://semver.org/). Releases are automated via GitHub Actions when a version tag is pushed.
+
+### Preparation Steps
+
+1. **Create a release branch** from `main`:
+
+   ```bash
+   git checkout -b release/v1.x.y
+   ```
+
+2. **Update the version** in `pyproject.toml`:
+
+   ```toml
+   version = "1.x.y"
+   ```
+
+3. **Update the README** with a new entry in the "What's New" section:
+
+   ```markdown
+   - **[v1.x.y - MM/DD/YY]:**
+     - Brief description of major changes
+   ```
+
+4. **Run all checks** to ensure quality:
+
+   ```bash
+   make lint-all  # Format, lint, and type check
+   make test      # Run all tests
+   ```
+
+5. **Commit and push** these changes:
+
+   ```bash
+   git commit -am "chore: Bump version to 1.x.y"
+   git push origin release/v1.x.y
+   ```
+
+### Creating the Release
+
+#### **Option 1: GitHub Web UI (Recommended for simplicity)**
+
+1. **Create a Pull Request** on GitHub and ensure all CI checks pass.
+
+2. **Merge the PR** to `main` once approved.
+
+3. **Create Release via GitHub**:
+   - Go to [Releases](https://github.com/awinml/voyage-embedders-haystack/releases) page
+   - Click "Create a new release"
+   - Click "Choose a tag" and type `v1.x.y` (GitHub will create the tag automatically)
+   - Fill in the release title: `Version 1.x.y`
+   - Add release notes/description describing major changes
+   - Click "Publish release"
+
+#### **Option 2: Command Line (For automation/scripting)**
+
+1. **Create a Pull Request** on GitHub and ensure all CI checks pass.
+
+2. **Merge the PR** to `main` once approved.
+
+3. **Create a git tag** on the `main` branch:
+
+   ```bash
+   git checkout main
+   git pull origin main
+   git tag v1.x.y
+   git push origin --tags
+   ```
+
+4. **Create Release on GitHub** (optional, for documentation):
+   - The tag push triggers the workflow automatically
+   - You can manually create a release afterwards for release notes, or use GitHub CLI:
+
+   ```bash
+   gh release create v1.x.y --title "Version 1.x.y" --notes "Release notes here"
+   ```
+
+### Automated Deployment
+
+When a tag matching the pattern `v[0-9].[0-9]+.[0-9]+*` is created (via either method):
+
+- GitHub Actions will automatically:
+  1. Build the source distribution and wheel using uv
+  2. Publish to PyPI using Trusted Publishing
+  3. Make the release publicly available (check in 2-5 minutes)
+
+### Versioning Guidelines
+
+- **Patch release** (1.x.Y): Bug fixes, documentation updates
+- **Minor release** (1.X.0): New features, backward compatible
+- **Major release** (X.0.0): Breaking changes, API modifications
+
+### Verifying the Release
+
+After the GitHub Actions workflow completes:
+
+1. Check [PyPI](https://pypi.org/project/voyage-embedders-haystack/) to confirm the release is published.
+2. Verify the package can be installed: `pip install voyage-embedders-haystack==1.x.y`.
+3. Check the [GitHub Releases](https://github.com/awinml/voyage-embedders-haystack/releases) page.
 
 ## Community Guidelines
 

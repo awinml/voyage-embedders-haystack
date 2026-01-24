@@ -12,7 +12,9 @@ import os
 
 from haystack import Document
 
-from haystack_integrations.components.embedders.voyage_embedders import VoyageContextualizedDocumentEmbedder
+from haystack_integrations.components.embedders.voyage_embedders import (
+    VoyageContextualizedDocumentEmbedder,
+)
 
 # Set API key (alternatively, set VOYAGE_API_KEY environment variable)
 # os.environ["VOYAGE_API_KEY"] = "your-api-key"

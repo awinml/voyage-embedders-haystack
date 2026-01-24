@@ -128,6 +128,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# uv
+uv.lock
+
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -161,3 +164,6 @@ cython_debug/
 
 # VS Code
 .vscode
+
+# Agents
+AGENTS.md
