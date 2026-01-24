@@ -38,9 +38,9 @@ dev = [
   "coveralls",
   "pytest",
   "datasets",
-  "ty>=0.0.8,<0.1.0",
-  "ruff==0.14.10",
-  "pre-commit>=4.5.0,<5",
+  "ty>=0.0.13",
+  "ruff>=0.14.14",
+  "pre-commit>=4.5.0",
 ]
 
 [tool.uv]
