@@ -263,6 +263,7 @@ class TestVoyageDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run(self):
         docs = [
             Document(content="I love cheese", meta={"topic": "Cuisine"}),
@@ -276,8 +277,8 @@ class TestVoyageDocumentEmbedder:
             suffix=" suffix",
             metadata_fields_to_embed=["topic"],
             embedding_separator=" | ",
-            timeout=600,
-            max_retries=1200,
+            timeout=120,
+            max_retries=10,
         )
 
         result = embedder.run(documents=docs)

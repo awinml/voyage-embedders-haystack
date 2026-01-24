@@ -413,6 +413,7 @@ class TestVoyageMultimodalEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run_text_only(self):
         """Test embedding text-only inputs."""
         embedder = VoyageMultimodalEmbedder(
@@ -436,6 +437,7 @@ class TestVoyageMultimodalEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run_with_output_dimension(self):
         """Test embedding with custom output dimension."""
         embedder = VoyageMultimodalEmbedder(
@@ -453,6 +455,7 @@ class TestVoyageMultimodalEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run_with_input_type(self):
         """Test embedding with input_type specified."""
         embedder = VoyageMultimodalEmbedder(

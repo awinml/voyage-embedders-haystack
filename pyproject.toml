@@ -37,6 +37,7 @@ dev = [
   "coverage[toml]>=6.5",
   "coveralls",
   "pytest",
+  "pytest-cov>=5",
   "pytest-rerunfailures>=12.0",
   "datasets",
   "ty>=0.0.13",
@@ -139,8 +140,8 @@ exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-vv --reruns 3 --reruns-delay 30"
-markers = ["unit: unit tests", "integration: integration tests"]
+addopts = "-vv"
+markers = ["unit: unit tests", "integration: integration tests", "flaky: tests with retry logic for external API rate limits"]
 log_cli = true
 
 [tool.mypy]

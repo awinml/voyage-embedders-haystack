@@ -155,6 +155,7 @@ class TestVoyageTextEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run(self):
         model = "voyage-3-large"
 
@@ -162,8 +163,8 @@ class TestVoyageTextEmbedder:
             model=model,
             prefix="prefix ",
             suffix=" suffix",
-            timeout=600,
-            max_retries=1200,
+            timeout=120,
+            max_retries=10,
         )
         result = embedder.run(text="The food was delicious")
 
