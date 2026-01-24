@@ -491,7 +491,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False)
         # Explicitly set output_dtype to None to cover the branch where it's not added to api_params
-        embedder.output_dtype = None  # type: ignore
+        embedder.output_dtype = None
 
         # Mock the client
         mock_result = MagicMock()
