@@ -17,44 +17,13 @@ Custom components for [Haystack](https://github.com/deepset-ai/haystack) for cre
 
 Voyage’s embedding models are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
-#### What's New
+#### What's New (v1.9.1)
 
-- **[v1.9.0 - 24/01/26]:**
+- Serialize `chunk_fn` for `VoyageContextualizedDocumentEmbedder` using Haystack's `serialize_callable`/`deserialize_callable`.
+- Improved typing across all components (explicit `run()` return types, tighter `chunk_fn` type).
+- Developer experience improvements: dotenv support for examples, `pyproject.toml` cleanup, updated `CONTRIBUTING.md`.
 
-  - The new `VoyageMultimodalEmbedder` component supports Voyage's multimodal embedding model (`voyage-multimodal-3.5`).
-  - Multimodal embeddings can encode text, images, and videos into a shared vector space for cross-modal similarity search.
-
-- **[v1.8.0 - 07/11/25]:**
-
-  - The new `VoyageContextualizedDocumentEmbedder` component supports Voyage's contextualized chunk embeddings.
-  - Contextualized embeddings encode document chunks "in context" with other chunks from the same document, preserving semantic relationships and reducing context loss for improved retrieval accuracy.
-
-- **[v1.5.0 - 22/01/25]:**
-
-  - The new `VoyageRanker` component can be used to rerank documents using the `Voyage Reranker` models.
-  - Matryoshka Embeddings and Quantized Embeddings can now be created using the `output_dimension` and `output_dtype` parameters.
-
-- **[v1.4.0 - 24/07/24]:**
-
-  - The maximum timeout and number of retries made by the Client can now be set for the embedders using the `timeout` and `max_retries` parameters.
-
-- **[v1.3.0 - 18/03/24]:**
-
-  - **Breaking Change:** The import path for the embedders has been changed to `haystack_integrations.components.embedders.voyage_embedders`.
-    Please replace all instances of `from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder` and `from voyage_embedders.voyage_text_embedder import VoyageTextEmbedder` with  
-    `from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder, VoyageTextEmbedder`.
-  - The embedders now use the Haystack `Secret` API for authentication. For more information please see the [Secret Management Documentation](https://docs.haystack.deepset.ai/docs/secret-management).
-
-- **[v1.2.0 - 02/02/24]:**
-
-  - **Breaking Change:** `VoyageDocumentEmbedder` and `VoyageTextEmbedder` now accept the `model` parameter instead of `model_name`.
-  - The embedders have been use the new `voyageai.Client.embed()` method instead of the deprecated `get_embedding` and `get_embeddings` methods of the global namespace.
-  - Support for the new `truncate` parameter has been added.
-  - The embedders now return the total number of tokens used as part of the `"total_tokens"` in the metadata.
-
-- **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.
-
-- **[v1.0.0 - 21/11/23]:** Added `VoyageTextEmbedder` and `VoyageDocument Embedder` to embed strings and documents.
+See the full [Changelog](CHANGELOG.md) for all releases.
 
 ## Requirements
 

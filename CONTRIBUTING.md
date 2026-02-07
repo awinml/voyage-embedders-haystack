@@ -123,12 +123,16 @@ This project follows [Semantic Versioning](https://semver.org/). Releases are au
    version = "1.x.y"
    ```
 
-3. **Update the README** with a new entry in the "What's New" section:
+3. **Update `CHANGELOG.md`** with a new version entry:
 
    ```markdown
-   - **[v1.x.y - MM/DD/YY]:**
-     - Brief description of major changes
+   ## [1.x.y] - YYYY-MM-DD
+
+   ### Added / Fixed / Changed
+   - Brief description of major changes
    ```
+
+   Also update the "What's New" section in `README.md` to reflect the latest release.
 
 4. **Run all checks** to ensure quality:
 
