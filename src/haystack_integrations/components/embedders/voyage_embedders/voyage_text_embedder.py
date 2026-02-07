@@ -134,7 +134,7 @@ class VoyageTextEmbedder:
         return default_from_dict(cls, data)
 
     @component.output_types(embedding=list[float], meta=dict[str, Any])
-    def run(self, text: str):
+    def run(self, text: str) -> dict[str, Any]:
         """
         Embed a single string.
 

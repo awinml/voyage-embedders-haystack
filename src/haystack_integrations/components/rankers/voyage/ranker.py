@@ -142,7 +142,7 @@ class VoyageRanker:
         return concatenated_input_list
 
     @component.output_types(documents=list[Document])
-    def run(self, query: str, documents: list[Document], top_k: int | None = None):
+    def run(self, query: str, documents: list[Document], top_k: int | None = None) -> dict[str, list[Document]]:
         """
         Use the Voyage AI Reranker to re-rank the list of documents based on the query.
 

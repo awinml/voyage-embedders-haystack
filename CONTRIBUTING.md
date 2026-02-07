@@ -45,6 +45,23 @@ There are many ways to contribute to the Voyage Haystack Integration:
 
     This creates an isolated virtual environment with project dependencies and the project installed in editable mode.
 
+## API Key Setup
+
+### CI
+
+The `VOYAGE_API_KEY` environment variable is configured as a secret in GitHub Actions and is available automatically during CI runs.
+
+### Local Development
+
+To avoid manually exporting `VOYAGE_API_KEY` each time, create a `.env` file in the project root:
+
+```bash
+cp .env.example .env
+# Edit .env and add your Voyage API key
+```
+
+The test suite (`conftest.py`) and example scripts automatically load this file via `python-dotenv`. The `.env` file is already in `.gitignore` so your key will never be committed.
+
 ## Code Quality Standards
 
 ### Testing

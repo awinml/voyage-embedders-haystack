@@ -1,3 +1,10 @@
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from haystack.dataclasses import Document
 
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder

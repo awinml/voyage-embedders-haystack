@@ -10,13 +10,20 @@ same document, reducing context loss that occurs when chunks are embedded indepe
 
 import os
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from haystack import Document
 
 from haystack_integrations.components.embedders.voyage_embedders import (
     VoyageContextualizedDocumentEmbedder,
 )
 
-# Set API key (alternatively, set VOYAGE_API_KEY environment variable)
+# Set API key (alternatively, set VOYAGE_API_KEY environment variable or load from .env file)
 # os.environ["VOYAGE_API_KEY"] = "your-api-key"
 
 
