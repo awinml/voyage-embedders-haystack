@@ -1,4 +1,11 @@
 # Install HuggingFace Datasets using "pip install datasets"
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from datasets import load_dataset
 from haystack import Pipeline
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
