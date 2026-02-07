@@ -205,7 +205,7 @@ class VoyageDocumentEmbedder:
         return all_embeddings, meta
 
     @component.output_types(documents=list[Document], meta=dict[str, Any])
-    def run(self, documents: list[Document]):
+    def run(self, documents: list[Document]) -> dict[str, Any]:
         """
         Embed a list of Documents.
 

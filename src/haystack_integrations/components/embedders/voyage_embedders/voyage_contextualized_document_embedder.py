@@ -4,7 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict
-from haystack.utils import Secret, deserialize_secrets_inplace
+from haystack.utils import Secret, deserialize_callable, deserialize_secrets_inplace, serialize_callable
 from tqdm import tqdm
 from voyageai import Client
 
@@ -51,7 +51,7 @@ class VoyageContextualizedDocumentEmbedder:
         metadata_fields_to_embed: list[str] | None = None,
         embedding_separator: str = "\n",
         source_id_field: str = "source_id",
-        chunk_fn: Callable | None = None,
+        chunk_fn: Callable[[str], list[str]] | None = None,
         progress_bar: bool = True,
         timeout: int | None = None,
         max_retries: int | None = None,
@@ -142,7 +142,7 @@ class VoyageContextualizedDocumentEmbedder:
             metadata_fields_to_embed=self.metadata_fields_to_embed,
             embedding_separator=self.embedding_separator,
             source_id_field=self.source_id_field,
-            chunk_fn=self.chunk_fn,
+            chunk_fn=serialize_callable(self.chunk_fn) if self.chunk_fn else None,
             api_key=self.api_key.to_dict(),
         )
 
@@ -156,7 +156,11 @@ class VoyageContextualizedDocumentEmbedder:
         :returns:
             Deserialized component.
         """
-        deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
+        init_params = data["init_parameters"]
+        deserialize_secrets_inplace(init_params, keys=["api_key"])
+        serialized_chunk_fn = init_params.get("chunk_fn")
+        if serialized_chunk_fn:
+            init_params["chunk_fn"] = deserialize_callable(serialized_chunk_fn)
         return default_from_dict(cls, data)
 
     def _prepare_texts_to_embed(self, documents: list[Document]) -> list[str]:
@@ -257,7 +261,7 @@ class VoyageContextualizedDocumentEmbedder:
         return all_embeddings, meta
 
     @component.output_types(documents=list[Document], meta=dict[str, Any])
-    def run(self, documents: list[Document]):
+    def run(self, documents: list[Document]) -> dict[str, Any]:
         """
         Embed a list of Documents using contextualized embeddings.
 

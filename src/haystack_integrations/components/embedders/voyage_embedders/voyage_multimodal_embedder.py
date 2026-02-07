@@ -167,7 +167,7 @@ class VoyageMultimodalEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    def _convert_content_item(self, item: object) -> Union[str, "Image.Image", "Video"]:
+    def _convert_content_item(self, item: MultimodalContent) -> Union[str, "Image.Image", "Video"]:
         """
         Convert a content item to a format accepted by the VoyageAI SDK.
 
@@ -261,7 +261,7 @@ class VoyageMultimodalEmbedder:
     def run(
         self,
         inputs: list[list[MultimodalContent]],
-    ):
+    ) -> dict[str, Any]:
         """
         Embed multimodal inputs.
 
