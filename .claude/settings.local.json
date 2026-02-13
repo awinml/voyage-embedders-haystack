@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch origin)",
+      "Bash(git reset --hard origin/main)",
+      "WebFetch(domain:docs.voyageai.com)",
+      "Bash(python -m pytest:*)",
+      "Bash(pip install:*)",
+      "Bash(export VOYAGE_API_KEY=\"pa-5Zbi_boRGte8aBa6BOpnlQVJnmR5xdvAQq_NJIcgyDy\")",
+      "Bash(python:*)",
+      "Bash(pip show:*)",
+      "Bash(pip index:*)",
+      "Bash(timeout 30 python:*)",
+      "Bash(xargs kill:*)",
+      "Bash(hatch run:*)",
+      "Bash(.venv/bin/ruff check .)",
+      "Bash(coverage run:*)",
+      "Bash(coverage report:*)",
+      "Bash(coverage html:*)",
+      "Bash(hatch env show:*)",
+      "WebSearch",
+      "WebFetch(domain:haystack.deepset.ai)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "Bash(hatch env prune:*)",
+      "Bash(export VOYAGE_API_KEY=\"pa-yQneAbvbbR0ypjbHlVC1VB3vKLtvN4DpgTyEYgyfDSa\")",
+      "WebFetch(domain:app.codecov.io)",
+      "Bash(gh pr view:*)",
+      "WebFetch(domain:coveralls.io)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ntest: Add unit tests to improve coverage for VoyageMultimodalEmbedder\n\nAdd comprehensive unit tests with mocking to cover:\n- Content conversion \\(_convert_content_item\\) for all types:\n  - String passthrough\n  - ByteStream to PIL Image conversion\n  - PIL Image passthrough  \n  - Video object passthrough\n  - Unsupported type error handling\n- Input preparation with mixed content types\n- Run method with mocked API client\n- All optional parameters \\(input_type, output_dimension, output_dtype\\)\n- Batch processing with multiple API calls\n- Image content handling\n- Environment variable initialization \\(VOYAGE_TIMEOUT, VOYAGE_MAX_RETRIES\\)\n\nThis significantly improves unit test coverage for the multimodal embedder\nfrom ~54% to better coverage by testing the actual embedding logic paths\nwithout requiring real API calls.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git merge:*)",
+      "Bash(git checkout:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

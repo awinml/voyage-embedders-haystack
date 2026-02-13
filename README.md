@@ -7,9 +7,9 @@
 [![License](https://img.shields.io/github/license/awinml/voyage-embedders-haystack?color=green)](LICENSE)
 [![Tests](https://github.com/awinml/voyage-embedders-haystack/workflows/Test/badge.svg)](https://github.com/awinml/voyage-embedders-haystack/actions)
 [![Coverage](https://coveralls.io/repos/github/awinml/voyage-embedders-haystack/badge.svg?branch=main)](https://coveralls.io/github/awinml/voyage-embedders-haystack?branch=main)
-[![Types](https://img.shields.io/badge/types-Mypy-blue.svg)](https://github.com/python/mypy)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/awinml/voyage-embedders-haystack/main.svg)](https://results.pre-commit.ci/latest/github/awinml/voyage-embedders-haystack/main)
+[![Types](https://img.shields.io/badge/types-ty-blue.svg)](https://docs.astral.sh/ty/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Code Style](https://img.shields.io/badge/Code%20Style-black-000000.svg)](https://github.com/psf/black)
 
 </div>
 
@@ -17,44 +17,18 @@ Custom components for [Haystack](https://github.com/deepset-ai/haystack) for cre
 
 Voyage’s embedding models are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
-#### What's New
+#### What's New (v1.9.1)
 
-- **[v1.9.0 - 13/02/26]:**
+- Serialize `chunk_fn` for `VoyageContextualizedDocumentEmbedder` using Haystack's `serialize_callable`/`deserialize_callable`.
+- Improved typing across all components (explicit `run()` return types, tighter `chunk_fn` type).
+- Developer experience improvements: dotenv support for examples, `pyproject.toml` cleanup, updated `CONTRIBUTING.md`.
 
-  - Added support for the **Voyage 4** model family: `voyage-4`, `voyage-4-large`, and `voyage-4-lite`.
-  - All voyage-4 models support flexible output dimensions (256, 512, 1024, 2048) and multiple output data types (float, int8, uint8, binary, ubinary).
+See the full [Changelog](CHANGELOG.md) for all releases.
 
-- **[v1.8.0 - 07/11/25]:**
+## Requirements
 
-  - The new `VoyageContextualizedDocumentEmbedder` component supports Voyage's contextualized chunk embeddings.
-  - Contextualized embeddings encode document chunks "in context" with other chunks from the same document, preserving semantic relationships and reducing context loss for improved retrieval accuracy.
-
-- **[v1.5.0 - 22/01/25]:**
-
-  - The new `VoyageRanker` component can be used to rerank documents using the `Voyage Reranker` models.
-  - Matryoshka Embeddings and Quantized Embeddings can now be created using the `output_dimension` and `output_dtype` parameters.
-
-- **[v1.4.0 - 24/07/24]:**
-
-  - The maximum timeout and number of retries made by the Client can now be set for the embedders using the `timeout` and `max_retries` parameters.
-
-- **[v1.3.0 - 18/03/24]:**
-
-  - **Breaking Change:** The import path for the embedders has been changed to `haystack_integrations.components.embedders.voyage_embedders`.
-    Please replace all instances of `from voyage_embedders.voyage_document_embedder import VoyageDocumentEmbedder` and `from voyage_embedders.voyage_text_embedder import VoyageTextEmbedder` with  
-    `from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder, VoyageTextEmbedder`.
-  - The embedders now use the Haystack `Secret` API for authentication. For more information please see the [Secret Management Documentation](https://docs.haystack.deepset.ai/docs/secret-management).
-
-- **[v1.2.0 - 02/02/24]:**
-
-  - **Breaking Change:** `VoyageDocumentEmbedder` and `VoyageTextEmbedder` now accept the `model` parameter instead of `model_name`.
-  - The embedders have been use the new `voyageai.Client.embed()` method instead of the deprecated `get_embedding` and `get_embeddings` methods of the global namespace.
-  - Support for the new `truncate` parameter has been added.
-  - The embedders now return the total number of tokens used as part of the `"total_tokens"` in the metadata.
-
-- **[v1.1.0 - 13/12/23]:** Added support for `input_type` parameter in `VoyageTextEmbedder` and `VoyageDocument Embedder`.
-
-- **[v1.0.0 - 21/11/23]:** Added `VoyageTextEmbedder` and `VoyageDocument Embedder` to embed strings and documents.
+- Python 3.10 or higher
+- [Voyage AI API Key](https://voyageai.com/)
 
 ## Installation
 
@@ -69,14 +43,47 @@ You can use Voyage Embedding models with multiple components:
 - **[VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py)**: For generating embeddings for queries.
 - **[VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py)**: For creating semantic embeddings for documents in your indexing pipeline.
 - **[VoyageContextualizedDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_contextualized_document_embedder.py)**: For creating contextualized embeddings where document chunks are embedded together to preserve context and improve retrieval accuracy.
+- **[VoyageMultimodalEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_multimodal_embedder.py)**: For creating multimodal embeddings that can encode text, images, and videos into a shared vector space.
 
 The Voyage Reranker models can be used with the [VoyageRanker](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/rankers/voyage/ranker.py) component.
+
+### Multimodal Embeddings
+
+The `VoyageMultimodalEmbedder` uses Voyage's multimodal embedding model (`voyage-multimodal-3.5`) to encode text, images, and videos into a shared vector space. This enables cross-modal similarity search where you can find images using text queries or find related content across different modalities.
+
+**Key features:**
+
+- Supports text, images (PIL Images, ByteStream), and videos
+- Inputs can combine multiple modalities (e.g., text + image)
+- Variable output dimensions: 256, 512, 1024 (default), 2048
+- Recommended model: `voyage-multimodal-3.5`
+
+**Usage example:**
+
+```python
+from haystack.dataclasses import ByteStream
+from haystack_integrations.components.embedders.voyage_embedders import VoyageMultimodalEmbedder
+from voyageai.video_utils import Video
+
+# Text-only embedding
+embedder = VoyageMultimodalEmbedder(model="voyage-multimodal-3.5")
+result = embedder.run(inputs=[["What is in this image?"]])
+
+# Mixed text and image embedding
+image_bytes = ByteStream.from_file_path("image.jpg")
+result = embedder.run(inputs=[["Describe this image:", image_bytes]])
+
+# Video embedding
+video = Video.from_path("video.mp4", model="voyage-multimodal-3.5")
+result = embedder.run(inputs=[["Describe this video:", video]])
+```
 
 ### Contextualized Chunk Embeddings
 
 The `VoyageContextualizedDocumentEmbedder` uses Voyage's contextualized embedding models to encode document chunks "in context" with other chunks from the same document. This approach preserves semantic relationships between chunks and reduces context loss, leading to improved retrieval accuracy.
 
 **Key features:**
+
 - Documents are grouped by a metadata field (default: `source_id`)
 - Chunks from the same source document are embedded together
 - Maintains semantic connections between related chunks

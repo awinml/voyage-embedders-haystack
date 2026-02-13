@@ -8,6 +8,10 @@ from haystack.utils.auth import Secret
 from haystack_integrations.components.embedders.voyage_embedders import VoyageContextualizedDocumentEmbedder
 
 
+def _custom_chunk_fn(text: str) -> list[str]:
+    return text.split(". ")
+
+
 class TestVoyageContextualizedDocumentEmbedder:
     @pytest.mark.unit
     def test_init_default(self, monkeypatch):
@@ -144,6 +148,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             metadata_fields_to_embed=["test_field"],
             embedding_separator=" | ",
             source_id_field="custom_source_field",
+            chunk_fn=_custom_chunk_fn,
         )
         data = component.to_dict()
         assert data == {
@@ -162,7 +167,7 @@ class TestVoyageContextualizedDocumentEmbedder:
                 "metadata_fields_to_embed": ["test_field"],
                 "embedding_separator": " | ",
                 "source_id_field": "custom_source_field",
-                "chunk_fn": None,
+                "chunk_fn": "tests.test_voyage_contextualized_document_embedder._custom_chunk_fn",
             },
         }
 
@@ -185,7 +190,7 @@ class TestVoyageContextualizedDocumentEmbedder:
                 "metadata_fields_to_embed": ["test_field"],
                 "embedding_separator": " | ",
                 "source_id_field": "custom_source_field",
-                "chunk_fn": None,
+                "chunk_fn": "tests.test_voyage_contextualized_document_embedder._custom_chunk_fn",
             },
         }
 
@@ -203,6 +208,7 @@ class TestVoyageContextualizedDocumentEmbedder:
         assert embedder.metadata_fields_to_embed == ["test_field"]
         assert embedder.embedding_separator == " | "
         assert embedder.source_id_field == "custom_source_field"
+        assert embedder.chunk_fn is _custom_chunk_fn
 
     @pytest.mark.unit
     def test_prepare_texts_to_embed_w_metadata(self):
@@ -491,7 +497,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False)
         # Explicitly set output_dtype to None to cover the branch where it's not added to api_params
-        embedder.output_dtype = None  # type: ignore
+        embedder.output_dtype = None
 
         # Mock the client
         mock_result = MagicMock()
@@ -512,6 +518,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run(self):
         docs = [
             Document(content="Introduction to quantum computing.", meta={"source_id": "doc1", "topic": "Quantum"}),
@@ -531,8 +538,8 @@ class TestVoyageContextualizedDocumentEmbedder:
             suffix=" suffix",
             metadata_fields_to_embed=["topic"],
             embedding_separator=" | ",
-            timeout=600,
-            max_retries=1200,
+            timeout=120,
+            max_retries=10,
         )
 
         result = embedder.run(documents=docs)
@@ -552,6 +559,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run_with_single_source(self):
         docs = [
             Document(content="First chunk of content.", meta={"source_id": "single_doc"}),

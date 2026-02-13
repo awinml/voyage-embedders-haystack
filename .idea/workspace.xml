@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="499321f0-68da-415b-ac52-0885e8275ec5" name="Changes" comment="Introducing VoyageAI's voyage-context-3 model" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;fzoll&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/voyage-ai/voyage-embedders-haystack.git&quot;,
+    &quot;accountId&quot;: &quot;f097cd10-ccaa-4b2a-85b3-a3773b12a7e5&quot;
+  }
+}</component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 0
+}</component>
+  <component name="ProjectId" id="2rtnB5yhBm0F8lSR7oo8GtYVxrM" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python tests.pytest for test_voyage_text_reranker.TestVoyageTextReranker.test_run.executor": "Debug",
+    "Python tests.pytest for test_voyage_text_reranker.TestVoyageTextReranker.test_to_dict.executor": "Run",
+    "Python tests.pytest in test_ranker.py.executor": "Run",
+    "Python tests.pytest in test_voyage_text_reranker.py.executor": "Run",
+    "Python.reranker_example.executor": "Run",
+    "Python.semantic_search_pipeline_example.executor": "Run",
+    "Python.voyage_text_reranker.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "feat/embedding-model-voyage-4-family",
+    "last_opened_file_path": "/Users/fodizoltan/Projects/toptal/voyageai/voyage-embedders-haystack",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/tests" />
+      <recent name="$PROJECT_DIR$/src/haystack_integrations/components/embedders/voyage_embedders" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/haystack_integrations/components/rerankers/voyage_rerankers" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python tests.pytest in test_ranker.py">
+    <configuration name="reranker_example" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="voyage-embedders-haystack" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="VOYAGE_API_KEY" value="pa-bxk-MRxXeujAy14wbRihGZNaGF1NvgmBYDV_XaWtN50" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/examples" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/examples/reranker_example.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="voyage_text_reranker" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="voyage-embedders-haystack" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/src/haystack_integrations/components/rerankers/voyage_rerankers" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/haystack_integrations/components/rerankers/voyage_rerankers/voyage_text_reranker.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest for tests.test_ranker.TestVoyageTextReranker.test_run" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="voyage-embedders-haystack" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="VOYAGE_API_KEY" value="pa-bxk-MRxXeujAy14wbRihGZNaGF1NvgmBYDV_XaWtN50" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;tests.test_ranker.TestVoyageTextReranker.test_run&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest for tests.test_ranker.TestVoyageTextReranker.test_to_dict" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="voyage-embedders-haystack" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;tests.test_ranker.TestVoyageTextReranker.test_to_dict&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest in test_ranker.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="voyage-embedders-haystack" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="VOYAGE_API_KEY" value="pa-bxk-MRxXeujAy14wbRihGZNaGF1NvgmBYDV_XaWtN50" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_ranker.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.reranker_example" />
+      <item itemvalue="Python.voyage_text_reranker" />
+      <item itemvalue="Python tests.pytest for tests.test_ranker.TestVoyageTextReranker.test_run" />
+      <item itemvalue="Python tests.pytest for tests.test_ranker.TestVoyageTextReranker.test_to_dict" />
+      <item itemvalue="Python tests.pytest in test_ranker.py" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python tests.pytest in test_ranker.py" />
+        <item itemvalue="Python tests.pytest for tests.test_ranker.TestVoyageTextReranker.test_to_dict" />
+        <item itemvalue="Python tests.pytest for tests.test_ranker.TestVoyageTextReranker.test_run" />
+        <item itemvalue="Python.voyage_text_reranker" />
+        <item itemvalue="Python.reranker_example" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-598b0484d0b5-e2d783800521-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-251.26927.74" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="499321f0-68da-415b-ac52-0885e8275ec5" name="Changes" comment="" />
+      <created>1737387099680</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1737387099680</updated>
+    </task>
+    <task id="LOCAL-00001" summary="Adding VoyageAI reranker">
+      <option name="closed" value="true" />
+      <created>1737481984441</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1737481984441</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Adding VoyageAI reranker">
+      <option name="closed" value="true" />
+      <created>1737483930850</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1737483930850</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Refactoring due to the comments">
+      <option name="closed" value="true" />
+      <created>1737542403857</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1737542403857</updated>
+    </task>
+    <task id="LOCAL-00004" summary="Correcting the docs">
+      <option name="closed" value="true" />
+      <created>1737543975847</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1737543975847</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1762448769601</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1762448769601</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1762449089365</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1762449089366</updated>
+    </task>
+    <task id="LOCAL-00007" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1762449387989</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1762449387989</updated>
+    </task>
+    <task id="LOCAL-00008" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1762450244831</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1762450244831</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1762450534827</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1762450534827</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1762451599008</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1762451599008</updated>
+    </task>
+    <task id="LOCAL-00011" summary="Introducing VoyageAI's voyage-context-3 model">
+      <option name="closed" value="true" />
+      <created>1766336056467</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1766336056467</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Adding VoyageAI reranker" />
+    <MESSAGE value="Refactoring due to the comments" />
+    <MESSAGE value="Correcting the docs" />
+    <MESSAGE value="Introducing VoyageAI's voyage-context-3 model" />
+    <option name="LAST_COMMIT_MESSAGE" value="Introducing VoyageAI's voyage-context-3 model" />
+  </component>
+</project>

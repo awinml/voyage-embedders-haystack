@@ -1,0 +1,85 @@
+{
+  "model_id": "voyage-multimodal-3.5",
+  "model_type": "embedding",
+  "modalities": ["text", "image", "video"],
+  "dimensions": 1024,
+  "dimension_options": [256, 512, 1024, 2048],
+  "max_tokens": 32000,
+  "tested_at": "2025-12-17T00:00:00Z",
+  "status": "preview",
+  "api_tested": true,
+  "api_key_env_var": "VOYAGE_API_KEY",
+  "description": "Voyage AI's multimodal embedding model that transforms unstructured data from multiple modalities (text, images, video) into a shared vector space.",
+  "use_cases": [
+    "Mixed-media document retrieval",
+    "PDF and slide processing",
+    "Image-text similarity search",
+    "Video content retrieval",
+    "Cross-modal semantic search"
+  ],
+  "special_features": [
+    "Supports interleaved text, images, and video in single inputs",
+    "Variable output dimensions (256, 512, 1024, 2048)",
+    "No text extraction workflow required for documents",
+    "Image: max 20MB, 16M pixels",
+    "Video: max 20MB",
+    "Token counting: 560 image pixels = 1 token, 1120 video pixels = 1 token"
+  ],
+  "pricing_tier": "preview",
+
+  "api_tests": {
+    "curl": {
+      "status": "pass",
+      "endpoint": "https://api.voyageai.com/v1/multimodalembeddings",
+      "notes": "Text-only and text+image both work"
+    },
+    "python": {
+      "status": "pass",
+      "version": "0.3.5",
+      "min_version_for_video": "0.3.6",
+      "method": "client.multimodal_embed()",
+      "notes": "Uses list of strings/PIL images format. Video input requires v0.3.6+"
+    },
+    "typescript": {
+      "status": "pass",
+      "version": "0.1.0",
+      "method": "client.multimodalEmbed()",
+      "notes": "Uses content array with type/text or type/image_url objects"
+    }
+  },
+
+  "input_types": {
+    "text": "Plain text content",
+    "image_url": "URL to an image file",
+    "image_base64": "Base64-encoded image data",
+    "video_url": "URL to a video file",
+    "video_base64": "Base64-encoded video data"
+  },
+
+  "input_parameters": {
+    "inputs": "Array of content objects (up to 1,000 items)",
+    "model": "Model name (voyage-multimodal-3.5)",
+    "input_type": "Optional: 'query' or 'document' for retrieval optimization",
+    "truncation": "Auto-fit inputs to context length (default: true)",
+    "output_dimension": "Optional: 256, 512, 1024 (default), or 2048"
+  },
+
+  "code_examples": {
+    "curl": "curl -X POST \"https://api.voyageai.com/v1/multimodalembeddings\" \\\n  -H \"Authorization: Bearer $VOYAGE_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"inputs\": [\n      {\n        \"content\": [\n          {\"type\": \"text\", \"text\": \"Your text here\"},\n          {\"type\": \"image_url\", \"image_url\": \"https://example.com/image.jpg\"}\n        ]\n      }\n    ],\n    \"model\": \"voyage-multimodal-3.5\"\n  }'",
+    "python": "import voyageai\nfrom PIL import Image\n\nclient = voyageai.Client(api_key=\"your-api-key\")\n\n# Text only\nresult = client.multimodal_embed(\n    inputs=[[\"Your text here\"]],\n    model=\"voyage-multimodal-3.5\"\n)\n\n# Text + Image\nimage = Image.open(\"image.jpg\")\nresult = client.multimodal_embed(\n    inputs=[[\"Your text here\", image]],\n    model=\"voyage-multimodal-3.5\"\n)\n\nprint(f\"Dimensions: {len(result.embeddings[0])}\")\nprint(f\"Tokens: {result.total_tokens}\")",
+    "typescript": "import { VoyageAIClient } from \"voyageai\";\n\nconst client = new VoyageAIClient({ apiKey: \"your-api-key\" });\n\nconst result = await client.multimodalEmbed({\n    model: \"voyage-multimodal-3.5\",\n    inputs: [\n        {\n            content: [\n                { type: \"text\", text: \"Your text here\" },\n                { type: \"image_url\", image_url: \"https://example.com/image.jpg\" }\n            ]\n        }\n    ]\n});\n\nconsole.log(`Dimensions: ${result.data[0].embedding.length}`);\nconsole.log(`Usage: ${JSON.stringify(result.usage)}`);"
+  },
+
+  "documentation": {
+    "multimodal_url": "https://docs.voyageai.com/docs/multimodal-embeddings",
+    "embeddings_url": "https://docs.voyageai.com/docs/embeddings",
+    "api_reference": "https://docs.voyageai.com/reference/multimodalembeddings-api"
+  },
+
+  "notes": [
+    "This is a MULTIMODAL model - use /v1/multimodalembeddings endpoint, NOT /v1/embeddings",
+    "Python SDK uses multimodal_embed() method with list of strings/PIL images",
+    "Python SDK video input requires voyageai >= 0.3.6",
+    "TypeScript SDK uses multimodalEmbed() method with content array format"
+  ]
+}

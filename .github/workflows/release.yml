@@ -13,14 +13,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install Hatch
-        run: pip install hatch
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
 
-      - name: Build
-        run: hatch build
+      - name: Build distributions
+        run: |
+          uv build
+          uv build --no-sources
 
-      - name: Publish on PyPi
+      - name: Publish on PyPI
         env:
-          HATCH_INDEX_USER: __token__
-          HATCH_INDEX_AUTH: ${{ secrets.PYPI_API_TOKEN }}
-        run: hatch publish -y
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish

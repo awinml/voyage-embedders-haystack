@@ -5,70 +5,130 @@ on:
     - cron: "30 1 * * *"
   push:
     branches:
-    - main
+      - main
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: test-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   PYTHONUNBUFFERED: "1"
   FORCE_COLOR: "1"
-  VOYAGE_API_KEY: ${{ secrets.VOYAGEAI_API_KEY }}
-  VOYAGE_TIMEOUT: "6000"
-  VOYAGE_MAX_RETRIES: "10000"
+  VOYAGE_TIMEOUT: "120"
+  VOYAGE_MAX_RETRIES: "5"
 
 jobs:
-  run:
-    name: Python ${{ matrix.python-version }} on ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
+  unit-tests:
+    name: Unit Tests - Python ${{ matrix.python-version }} on ${{ startsWith(matrix.os, 'macos-') && 'macOS' || startsWith(matrix.os, 'windows-') && 'Windows' || 'Linux' }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-    - name: Support longpaths
-      if: matrix.os == 'windows-latest'
-      run: git config --system core.longpaths true
+      - name: Support longpaths
+        if: matrix.os == 'windows-latest'
+        run: git config --system core.longpaths true
 
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install Hatch
-      run: pip install --upgrade hatch
-
-    - name: Lint
-      if: matrix.python-version == '3.9' && runner.os == 'Linux'
-      run: hatch run lint:all
-
-    - name: Run tests
-      run: hatch run cov
-
-    - name: Run tests-examples
-      if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-      run: hatch run test-examples
-
-    - name: Coveralls Parallel
-      # We upload only coverage for ubuntu as handling both os
-      # complicates the workflow too much for little to no gain
-      if: matrix.os == 'ubuntu-latest'
-      uses: coverallsapp/github-action@v2
-      with:
-        parallel: true
-
-  upload-coverage:
-    needs: run
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
         with:
-          parallel-finished: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Lint
+        if: matrix.python-version == '3.10' && runner.os == 'Linux'
+        run: make lint-all
+
+      - name: Run unit tests (with coverage)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+        run: uv run pytest tests -m "not integration" -v --cov --cov-report=xml
+
+      - name: Run unit tests
+        if: matrix.os != 'ubuntu-latest' || matrix.python-version != '3.10'
+        run: uv run pytest tests -m "not integration" -v
+
+      - name: Upload coverage to Coveralls
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+        uses: coverallsapp/github-action@v2
+
+  integration-tests:
+    needs: unit-tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: voyage-api
+      cancel-in-progress: false
+    env:
+      VOYAGE_API_KEY: ${{ secrets.VOYAGEAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Run integration tests
+        run: uv run pytest tests -m integration -v
+
+  test-examples:
+    needs: integration-tests
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    name: Examples - ${{ matrix.example }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: voyage-api
+      cancel-in-progress: false
+    env:
+      VOYAGE_API_KEY: ${{ secrets.VOYAGEAI_API_KEY }}
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [text-embedder, doc-embedder, semantic-search, reranker]
+      max-parallel: 1
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Run ${{ matrix.example }} example
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: make example-${{ matrix.example }}

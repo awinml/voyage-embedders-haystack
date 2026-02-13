@@ -1,0 +1,53 @@
+{
+  "model_id": "voyage-4-lite",
+  "model_type": "embedding",
+  "dimensions": 1024,
+  "flexible_dimensions": [256, 512, 1024, 2048],
+  "max_tokens": 32000,
+  "max_batch_tokens": 1000000,
+  "tested_at": "2026-01-15T00:00:00Z",
+  "description": "Optimized for latency and cost",
+  "use_cases": [
+    "Cost-sensitive applications",
+    "Low-latency requirements",
+    "High-throughput batch processing",
+    "General-purpose retrieval"
+  ],
+  "special_features": [
+    "Best performance-to-cost ratio in voyage-4 series",
+    "Highest batch throughput (1M tokens per batch)",
+    "Flexible output dimensions (256, 512, 1024, 2048)",
+    "Multiple output data types (float, int8, uint8, binary, ubinary)",
+    "Compatible with all voyage-4 series embeddings"
+  ],
+  "output_data_types": ["float", "int8", "uint8", "binary", "ubinary"],
+  "pricing_tier": "lite",
+
+  "api_tests": {
+    "curl": {
+      "status": "pass",
+      "notes": "Successfully returned 1024-dimensional embedding"
+    },
+    "python": {
+      "status": "pass",
+      "version": "0.3.7",
+      "notes": "Successfully returned 1024-dimensional embedding using voyageai package"
+    },
+    "typescript": {
+      "status": "pass",
+      "version": "0.1.0",
+      "notes": "Successfully returned 1024-dimensional embedding using voyageai package"
+    }
+  },
+
+  "code_examples": {
+    "curl": "curl -X POST \"https://api.voyageai.com/v1/embeddings\" \\\n    -H \"Authorization: Bearer $VOYAGE_API_KEY\" \\\n    -H \"Content-Type: application/json\" \\\n    -d '{\n        \"model\": \"voyage-4-lite\",\n        \"input\": \"Your text to embed\"\n    }'",
+    "python": "import voyageai\n\nclient = voyageai.Client(api_key=\"your-api-key\")\n\nresult = client.embed(\n    texts=[\"Your text to embed\"],\n    model=\"voyage-4-lite\"\n)\n\nprint(f\"Embedding dimensions: {len(result.embeddings[0])}\")\nprint(f\"Total tokens: {result.total_tokens}\")",
+    "typescript": "import { VoyageAIClient } from \"voyageai\";\n\nconst client = new VoyageAIClient({\n    apiKey: \"your-api-key\"\n});\n\nconst result = await client.embed({\n    model: \"voyage-4-lite\",\n    input: [\"Your text to embed\"]\n});\n\nconsole.log(`Embedding dimensions: ${result.data[0].embedding.length}`);\nconsole.log(`Total tokens: ${result.usage.totalTokens}`);"
+  },
+
+  "documentation": {
+    "embeddings_url": "https://docs.voyageai.com/docs/embeddings",
+    "api_reference": "https://docs.voyageai.com/reference/embeddings-api"
+  }
+}

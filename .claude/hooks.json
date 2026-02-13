@@ -1,0 +1,10 @@
+{
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "command": [".claude/hooks/orchestrator_event_hook.py"],
+      "blocking": false,
+      "timeout": 1000
+    }
+  ]
+}

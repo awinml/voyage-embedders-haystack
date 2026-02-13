@@ -1,3 +1,10 @@
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from haystack_integrations.components.embedders.voyage_embedders import VoyageTextEmbedder
 
 # Example text from the Amazon Reviews Polarity Dataset (https://huggingface.co/datasets/amazon_polarity)

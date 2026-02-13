@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
@@ -33,18 +33,18 @@ class VoyageDocumentEmbedder:
         self,
         model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        input_type: Optional[str] = None,
+        input_type: str | None = None,
         truncate: bool = True,
         prefix: str = "",
         suffix: str = "",
-        output_dimension: Optional[int] = None,
+        output_dimension: int | None = None,
         output_dtype: str = "float",
         batch_size: int = 32,
-        metadata_fields_to_embed: Optional[List[str]] = None,
+        metadata_fields_to_embed: list[str] | None = None,
         embedding_separator: str = "\n",
         progress_bar: bool = True,
-        timeout: Optional[int] = None,
-        max_retries: Optional[int] = None,
+        timeout: int | None = None,
+        max_retries: int | None = None,
     ):
         """
         Create a VoyageDocumentEmbedder component.
@@ -123,7 +123,7 @@ class VoyageDocumentEmbedder:
 
         self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Serializes the component to a dictionary.
 
@@ -147,7 +147,7 @@ class VoyageDocumentEmbedder:
         )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "VoyageDocumentEmbedder":
+    def from_dict(cls, data: dict[str, Any]) -> "VoyageDocumentEmbedder":
         """
         Deserializes the component from a dictionary.
 
@@ -159,7 +159,7 @@ class VoyageDocumentEmbedder:
         deserialize_secrets_inplace(data["init_parameters"], keys=["api_key"])
         return default_from_dict(cls, data)
 
-    def _prepare_texts_to_embed(self, documents: List[Document]) -> List[str]:
+    def _prepare_texts_to_embed(self, documents: list[Document]) -> list[str]:
         """
         Prepare the texts to embed by concatenating the Document text with the metadata fields to embed.
         """
@@ -178,13 +178,15 @@ class VoyageDocumentEmbedder:
             texts_to_embed.append(text_to_embed)
         return texts_to_embed
 
-    def _embed_batch(self, texts_to_embed: List[str], batch_size: int) -> Tuple[List[List[float]], Dict[str, Any]]:
+    def _embed_batch(
+        self, texts_to_embed: list[str], batch_size: int
+    ) -> tuple[list[list[float] | list[int]], dict[str, Any]]:
         """
         Embed a list of texts in batches.
         """
 
-        all_embeddings = []
-        meta: Dict[str, Any] = {}
+        all_embeddings: list[list[float] | list[int]] = []
+        meta: dict[str, Any] = {}
         meta["total_tokens"] = 0
         for i in tqdm(
             range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
@@ -203,8 +205,8 @@ class VoyageDocumentEmbedder:
 
         return all_embeddings, meta
 
-    @component.output_types(documents=List[Document], meta=Dict[str, Any])
-    def run(self, documents: List[Document]):
+    @component.output_types(documents=list[Document], meta=dict[str, Any])
+    def run(self, documents: list[Document]) -> dict[str, Any]:
         """
         Embed a list of Documents.
 
@@ -227,7 +229,7 @@ class VoyageDocumentEmbedder:
 
         embeddings, meta = self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
 
-        for doc, emb in zip(documents, embeddings):
+        for doc, emb in zip(documents, embeddings, strict=True):
             doc.embedding = emb
 
         return {"documents": documents, "meta": meta}

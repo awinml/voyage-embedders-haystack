@@ -1,4 +1,5 @@
 import os
+from unittest.mock import Mock, patch
 
 import pytest
 from haystack.utils.auth import Secret
@@ -153,8 +154,30 @@ class TestVoyageTextEmbedder:
         assert embedder.output_dimension == 2048
         assert embedder.output_dtype == "int8"
 
+    @pytest.mark.unit
+    def test_run_with_mocked_api(self):
+        embedder = VoyageTextEmbedder(
+            model="voyage-3",
+            prefix="prefix ",
+            suffix=" suffix",
+            api_key=Secret.from_token("fake-api-key"),
+        )
+
+        # Mock the client.embed method
+        mock_response = Mock()
+        mock_response.embeddings = [[0.1] * 1024]  # 1024 dimensions
+        mock_response.total_tokens = 6
+
+        with patch.object(embedder.client, "embed", return_value=mock_response):
+            result = embedder.run(text="The food was delicious")
+
+        assert len(result["embedding"]) == 1024
+        assert all(isinstance(x, float) for x in result["embedding"])
+        assert result["meta"]["total_tokens"] == 6
+
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run(self):
         model = "voyage-3-large"
 
@@ -162,8 +185,8 @@ class TestVoyageTextEmbedder:
             model=model,
             prefix="prefix ",
             suffix=" suffix",
-            timeout=600,
-            max_retries=1200,
+            timeout=120,
+            max_retries=10,
         )
         result = embedder.run(text="The food was delicious")
 

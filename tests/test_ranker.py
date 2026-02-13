@@ -1,4 +1,5 @@
 import os
+from unittest.mock import MagicMock, patch
 
 import pytest
 from haystack import Document
@@ -43,6 +44,18 @@ class TestVoyageTextReranker:
         assert reranker.suffix == "suffix"
         assert reranker.meta_fields_to_embed == ["meta_field_1", "meta_field_2"]
         assert reranker.meta_data_separator == ","
+
+    @pytest.mark.unit
+    def test_init_with_explicit_timeout_and_max_retries(self):
+        with patch("haystack_integrations.components.rankers.voyage.ranker.Client") as mock_client:
+            reranker = VoyageRanker(
+                model="rerank-2",
+                api_key=Secret.from_token("fake-api-key"),
+                timeout=60,
+                max_retries=3,
+            )
+            assert reranker.model == "rerank-2"
+            mock_client.assert_called_once_with(api_key="fake-api-key", max_retries=3, timeout=60)
 
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
@@ -147,13 +160,14 @@ class TestVoyageTextReranker:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     def test_run(self):
         model = "rerank-2"
 
         documents = [
-            Document(id="abcd", content="Paris is in France"),
-            Document(id="efgh", content="Berlin is in Germany"),
-            Document(id="ijkl", content="Lyon is in France"),
+            Document(content="Paris is in France"),
+            Document(content="Berlin is in Germany"),
+            Document(content="Lyon is in France"),
         ]
 
         reranker = VoyageRanker(model=model, prefix="prefix ", suffix=" suffix")
@@ -168,10 +182,65 @@ class TestVoyageTextReranker:
 
         integer_input = 1
         documents = [
-            Document(id="abcd", content="Paris is in France"),
-            Document(id="efgh", content="Berlin is in Germany"),
-            Document(id="ijkl", content="Lyon is in France"),
+            Document(content="Paris is in France"),
+            Document(content="Berlin is in Germany"),
+            Document(content="Lyon is in France"),
         ]
 
         with pytest.raises(InvalidRequestError, match="not a valid string"):
             reranker.run(query=integer_input, documents=documents)
+
+    @pytest.mark.unit
+    def test_run_with_negative_top_k(self):
+        reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
+
+        documents = [
+            Document(content="Paris is in France"),
+            Document(content="Berlin is in Germany"),
+        ]
+
+        with pytest.raises(ValueError, match="top_k must be > 0"):
+            reranker.run(query="test query", documents=documents, top_k=-1)
+
+    @pytest.mark.unit
+    def test_run_with_zero_top_k(self):
+        # When top_k is set in __init__ and we pass 0 to run(),
+        # the logic `top_k = top_k or self.top_k` will use self.top_k (5)
+        # So we need to test with a default top_k that's 0
+        reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"), top_k=0)
+
+        documents = [
+            Document(content="Paris is in France"),
+            Document(content="Berlin is in Germany"),
+        ]
+
+        with pytest.raises(ValueError, match="top_k must be > 0"):
+            reranker.run(query="test query", documents=documents)
+
+    @pytest.mark.unit
+    def test_run_with_exceeding_document_count(self):
+        reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
+
+        # Create 1100 documents to exceed MAX_NUM_DOCS (1000)
+        documents = [Document(content=f"Content {i}") for i in range(1100)]
+
+        # Mock the client.rerank method
+        mock_outputs = [MagicMock(index=i, relevance_score=0.95 - (i * 0.01)) for i in range(10)]  # Return 10 results
+
+        mock_response = MagicMock()
+        mock_response.results = mock_outputs
+
+        reranker.client.rerank = MagicMock(return_value=mock_response)
+
+        result = reranker.run(query="test query", documents=documents, top_k=10)
+
+        # Verify that rerank was called with only the first 1000 documents
+        reranker.client.rerank.assert_called_once()
+        call_kwargs = reranker.client.rerank.call_args[1]
+        assert len(call_kwargs["documents"]) == 1000
+
+        # Verify results are returned correctly
+        assert len(result["documents"]) == 10
+        assert all(isinstance(doc, Document) for doc in result["documents"])
+        assert result["documents"][0].score == 0.95
+        assert result["documents"][-1].score == 0.95 - (9 * 0.01)
