@@ -8,7 +8,7 @@ text = (
 instruction = "Represent the Amazon comment for classifying the sentence as positive or negative"
 
 text_embedder = VoyageTextEmbedder(
-    model="voyage-3",
+    model="voyage-4",
     input_type="query",
     timeout=600,
     max_retries=1200,

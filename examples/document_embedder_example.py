@@ -34,7 +34,7 @@ document_list = [
 ]
 
 doc_embedder = VoyageDocumentEmbedder(
-    model="voyage-3",
+    model="voyage-4",
     timeout=600,
     max_retries=1200,
 )

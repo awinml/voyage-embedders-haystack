@@ -263,6 +263,35 @@ class TestVoyageDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.parametrize("model", ["voyage-4", "voyage-4-large", "voyage-4-lite"])
+    def test_run_voyage_4(self, model):
+        docs = [
+            Document(content="I love cheese", meta={"topic": "Cuisine"}),
+            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
+        ]
+
+        embedder = VoyageDocumentEmbedder(model=model, timeout=600, max_retries=1200)
+        result = embedder.run(documents=docs)
+
+        assert len(result["documents"]) == len(docs)
+        for doc in result["documents"]:
+            assert isinstance(doc.embedding, list)
+            assert len(doc.embedding) == 1024
+            assert all(isinstance(x, float) for x in doc.embedding)
+        assert result["meta"]["total_tokens"] > 0
+
+        # Custom dimensions
+        embedder_dim = VoyageDocumentEmbedder(model=model, output_dimension=512, timeout=600, max_retries=1200)
+        result_dim = embedder_dim.run(documents=[Document(content="I love cheese")])
+        assert len(result_dim["documents"][0].embedding) == 512
+
+        # Quantized output
+        embedder_int8 = VoyageDocumentEmbedder(model=model, output_dtype="int8", timeout=600, max_retries=1200)
+        result_int8 = embedder_int8.run(documents=[Document(content="I love cheese")])
+        assert len(result_int8["documents"][0].embedding) == 1024
+
+    @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
+    @pytest.mark.integration
     def test_run(self):
         docs = [
             Document(content="I love cheese", meta={"topic": "Cuisine"}),

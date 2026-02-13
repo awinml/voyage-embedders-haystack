@@ -171,6 +171,27 @@ class TestVoyageTextEmbedder:
         assert all(isinstance(x, float) for x in result["embedding"])
         assert result["meta"]["total_tokens"] == 6, "Total tokens does not match"
 
+    @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
+    @pytest.mark.integration
+    @pytest.mark.parametrize("model", ["voyage-4", "voyage-4-large", "voyage-4-lite"])
+    def test_run_voyage_4(self, model):
+        embedder = VoyageTextEmbedder(model=model, timeout=600, max_retries=1200)
+        result = embedder.run(text="The food was delicious")
+
+        assert len(result["embedding"]) == 1024
+        assert all(isinstance(x, float) for x in result["embedding"])
+        assert result["meta"]["total_tokens"] > 0
+
+        # Custom dimensions
+        embedder_dim = VoyageTextEmbedder(model=model, output_dimension=512, timeout=600, max_retries=1200)
+        result_dim = embedder_dim.run(text="The food was delicious")
+        assert len(result_dim["embedding"]) == 512
+
+        # Quantized output
+        embedder_int8 = VoyageTextEmbedder(model=model, output_dtype="int8", timeout=600, max_retries=1200)
+        result_int8 = embedder_int8.run(text="The food was delicious")
+        assert len(result_int8["embedding"]) == 1024
+
     @pytest.mark.unit
     def test_run_wrong_input_format(self):
         embedder = VoyageTextEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))

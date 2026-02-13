@@ -19,6 +19,11 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
 
 #### What's New
 
+- **[v1.9.0 - 13/02/26]:**
+
+  - Added support for the **Voyage 4** model family: `voyage-4`, `voyage-4-large`, and `voyage-4-lite`.
+  - All voyage-4 models support flexible output dimensions (256, 512, 1024, 2048) and multiple output data types (float, int8, uint8, binary, ubinary).
+
 - **[v1.8.0 - 07/11/25]:**
 
   - The new `VoyageContextualizedDocumentEmbedder` component supports Voyage's contextualized chunk embeddings.
