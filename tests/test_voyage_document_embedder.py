@@ -324,6 +324,7 @@ class TestVoyageDocumentEmbedder:
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
+    @pytest.mark.flaky(reruns=3, reruns_delay=60)
     @pytest.mark.parametrize("model", ["voyage-4", "voyage-4-large", "voyage-4-lite"])
     def test_run_voyage_4(self, model):
         docs = [

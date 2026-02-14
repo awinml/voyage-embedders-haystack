@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.0] - 2026-02-15
+
+### Added
+
+- Add support for Voyage 4 model family (`voyage-4`, `voyage-4-large`, `voyage-4-lite`).
+- Support flexible output dimensions (256, 512, 1024, 2048) for Voyage 4 models.
+- Support multiple output data types (`float`, `int8`, `uint8`, `binary`, `ubinary`).
+
 ## [1.9.1] - 2026-02-07
 
 ### Fixed

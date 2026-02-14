@@ -17,11 +17,11 @@ Custom components for [Haystack](https://github.com/deepset-ai/haystack) for cre
 
 Voyage’s embedding models are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
-#### What's New (v1.9.1)
+#### What's New (v1.10.0)
 
-- Serialize `chunk_fn` for `VoyageContextualizedDocumentEmbedder` using Haystack's `serialize_callable`/`deserialize_callable`.
-- Improved typing across all components (explicit `run()` return types, tighter `chunk_fn` type).
-- Developer experience improvements: dotenv support for examples, `pyproject.toml` cleanup, updated `CONTRIBUTING.md`.
+- Add support for Voyage 4 model family (`voyage-4`, `voyage-4-large`, `voyage-4-lite`).
+- Support flexible output dimensions (256, 512, 1024, 2048) for Voyage 4 models.
+- Support multiple output data types (`float`, `int8`, `uint8`, `binary`, `ubinary`).
 
 See the full [Changelog](CHANGELOG.md) for all releases.
 
