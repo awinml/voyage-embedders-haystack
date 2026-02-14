@@ -19,9 +19,9 @@ Voyage’s embedding models are state-of-the-art in retrieval accuracy. These mo
 
 #### What's New (v1.10.0)
 
-- Add support for Voyage 4 model family (`voyage-4`, `voyage-4-large`, `voyage-4-lite`).
-- Support flexible output dimensions (256, 512, 1024, 2048) for Voyage 4 models.
-- Support multiple output data types (`float`, `int8`, `uint8`, `binary`, `ubinary`).
+- Support for Voyage 4 model family (`voyage-4`, `voyage-4-large`, `voyage-4-lite`).
+- Voyage 4 models support flexible output dimensions (256, 512, 1024, 2048) and multiple output data types (`float`, `int8`, `uint8`, `binary`, `ubinary`).
+- Updated examples to use `voyage-4` as the default model.
 
 See the full [Changelog](CHANGELOG.md) for all releases.
 
@@ -140,10 +140,10 @@ retriever = InMemoryEmbeddingRetriever(document_store=doc_store)
 doc_writer = DocumentWriter(document_store=doc_store)
 
 doc_embedder = VoyageDocumentEmbedder(
-    model="voyage-2",
+    model="voyage-4",
     input_type="document",
 )
-text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
+text_embedder = VoyageTextEmbedder(model="voyage-4", input_type="query")
 
 # Indexing Pipeline
 indexing_pipeline = Pipeline()
@@ -161,7 +161,7 @@ print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}
 Query the Semantic Search Pipeline using the `InMemoryEmbeddingRetriever` and `VoyageTextEmbedder`:
 
 ```python
-text_embedder = VoyageTextEmbedder(model="voyage-2", input_type="query")
+text_embedder = VoyageTextEmbedder(model="voyage-4", input_type="query")
 
 # Query Pipeline
 query_pipeline = Pipeline()
