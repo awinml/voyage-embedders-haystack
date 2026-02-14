@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [1.10.0] - 2026-02-15
+
+### Added
+
+- Support for Voyage 4 model family (`voyage-4`, `voyage-4-large`, `voyage-4-lite`).
+- Voyage 4 models support flexible output dimensions (256, 512, 1024, 2048) and multiple output data types (`float`, `int8`, `uint8`, `binary`, `ubinary`).
+
+### Changed
+
+- Updated `VoyageTextEmbedder` and `VoyageDocumentEmbedder` docstrings to document Voyage 4 model support for `output_dimension` and `output_dtype` parameters.
+- Updated examples to use `voyage-4` as the default model.
 
 ## [1.9.1] - 2026-02-07
 
@@ -73,3 +88,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Added
 
 - `VoyageTextEmbedder` and `VoyageDocumentEmbedder` to embed strings and documents.
+
+[unreleased]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.9.1...v1.10.0
+[1.9.1]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.9.0...v1.9.1
+[1.9.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.8.0...v1.9.0
+[1.8.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.5.0...v1.8.0
+[1.5.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/awinml/voyage-embedders-haystack/releases/tag/v1.0.0
