@@ -12,16 +12,16 @@ try:
     from PIL import Image
 
     PIL_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     PIL_AVAILABLE = False
 
 try:
     from voyageai.video_utils import Video
 
     VIDEO_AVAILABLE = True
-except ImportError:
+except ImportError:  # pragma: no cover
     VIDEO_AVAILABLE = False
-    Video = None  # type: ignore[misc, assignment]
+    Video = None  # ty: ignore[invalid-assignment]
 
 
 logger = logging.getLogger(__name__)
