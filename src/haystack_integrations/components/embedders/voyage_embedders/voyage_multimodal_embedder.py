@@ -21,7 +21,7 @@ try:
     VIDEO_AVAILABLE = True
 except ImportError:
     VIDEO_AVAILABLE = False
-    Video = None  # type: ignore[misc, assignment]
+    Video = None  # ty: ignore[invalid-assignment]
 
 
 logger = logging.getLogger(__name__)
