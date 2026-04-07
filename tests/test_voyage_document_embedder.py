@@ -263,6 +263,31 @@ class TestVoyageDocumentEmbedder:
         assert not result["documents"]  # empty list
 
     @pytest.mark.unit
+    def test_run_with_mocked_api_int8(self):
+        docs = [Document(content="test doc")]
+
+        embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
+            output_dtype="int8",
+            api_key=Secret.from_token("fake-api-key"),
+        )
+
+        mock_response = Mock()
+        mock_response.embeddings = [[1, 2, 3, 4]]  # Simulate int8 embeddings (integers)
+        mock_response.total_tokens = 2
+
+        with patch.object(embedder.client, "embed", return_value=mock_response):
+            result = embedder.run(documents=docs)
+
+        documents_with_embeddings = result["documents"]
+        assert len(documents_with_embeddings) == 1
+        doc = documents_with_embeddings[0]
+        assert isinstance(doc.embedding, list)
+        assert doc.embedding == [1, 2, 3, 4]
+        assert all(isinstance(x, int) for x in doc.embedding)
+        assert result["meta"]["total_tokens"] == 2
+
+    @pytest.mark.unit
     def test_run_with_mocked_api(self):
         docs = [
             Document(content="I love cheese", meta={"topic": "Cuisine"}),
