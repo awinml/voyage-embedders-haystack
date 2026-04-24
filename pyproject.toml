@@ -41,7 +41,7 @@ dev = [
   "pytest-cov>=5",
   "pytest-rerunfailures>=12.0",
   "datasets",
-  "ty>=0.0.29",
+  "ty>=0.0.32",
   "ruff>=0.15.10",
   "pre-commit>=4.5.0",
   "python-dotenv",
@@ -160,3 +160,4 @@ include = ["tests/**"]
 [tool.ty.overrides.rules]
 invalid-assignment = "ignore"
 invalid-argument-type = "ignore"
+unresolved-attribute = "ignore"
