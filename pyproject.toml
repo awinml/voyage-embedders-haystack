@@ -42,13 +42,17 @@ dev = [
   "pytest-rerunfailures>=12.0",
   "datasets",
   "ty>=0.0.32",
-  "ruff>=0.15.11",
+  "ruff>=0.15.13",
   "pre-commit>=4.5.0",
   "python-dotenv",
 ]
 
 [tool.uv]
 managed = true
+constraint-dependencies = ["yarl!=1.24.1"]
+required-environments = [
+  "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
 
 [tool.ruff]
 target-version = "py310"
