@@ -49,9 +49,7 @@ dev = [
 
 [tool.uv]
 managed = true
-
-[tool.uv.constraint-dependencies]
-yarl = "!=1.24.1"
+constraint-dependencies = ["yarl!=1.24.1"]
 
 [tool.ruff]
 target-version = "py310"
