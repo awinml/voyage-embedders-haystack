@@ -50,6 +50,9 @@ dev = [
 [tool.uv]
 managed = true
 constraint-dependencies = ["yarl!=1.24.1"]
+required-environments = [
+  "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
 
 [tool.ruff]
 target-version = "py310"
