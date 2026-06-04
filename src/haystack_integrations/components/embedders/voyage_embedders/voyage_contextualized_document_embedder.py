@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_callable, deserialize_secrets_inplace, serialize_callable
@@ -213,7 +213,7 @@ class VoyageContextualizedDocumentEmbedder:
 
     def _embed_batch(
         self, grouped_texts: list[list[str]], batch_size: int
-    ) -> tuple[list[list[float] | list[int]], dict[str, Any]]:
+    ) -> tuple[list[list[int | float]], dict[str, Any]]:
         """
         Embed groups of texts using contextualized embeddings.
 
@@ -225,7 +225,7 @@ class VoyageContextualizedDocumentEmbedder:
             Tuple of (all_embeddings, metadata) where all_embeddings is a flat list of embeddings
             corresponding to the flattened input texts.
         """
-        all_embeddings: list[list[float] | list[int]] = []
+        all_embeddings: list[list[int | float]] = []
         meta: dict[str, Any] = {}
         meta["total_tokens"] = 0
 
@@ -254,7 +254,7 @@ class VoyageContextualizedDocumentEmbedder:
 
             # Flatten embeddings from all groups in this batch
             for result in response.results:
-                all_embeddings.extend(result.embeddings)
+                all_embeddings.extend(cast(list[list[int | float]], result.embeddings))
 
             meta["total_tokens"] += response.total_tokens
 
