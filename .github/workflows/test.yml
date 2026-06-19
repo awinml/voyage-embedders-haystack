@@ -38,7 +38,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: git config --system core.longpaths true
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
@@ -79,7 +79,7 @@ jobs:
     env:
       VOYAGE_API_KEY: ${{ secrets.VOYAGEAI_API_KEY }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v6
@@ -112,7 +112,7 @@ jobs:
         example: [text-embedder, doc-embedder, semantic-search, reranker]
       max-parallel: 1
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.14
         uses: actions/setup-python@v6
