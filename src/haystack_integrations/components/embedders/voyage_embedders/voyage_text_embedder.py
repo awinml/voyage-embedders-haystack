@@ -1,13 +1,13 @@
-import os
 from typing import Any
 
 from haystack import component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
-from voyageai import Client
+
+from haystack_integrations.components._voyage_client_mixin import VoyageClientMixin
 
 
 @component
-class VoyageTextEmbedder:
+class VoyageTextEmbedder(VoyageClientMixin):
     """
     A component for embedding strings using Voyage models.
 
@@ -17,7 +17,7 @@ class VoyageTextEmbedder:
 
     text_to_embed = "I love pizza!"
 
-    text_embedder = VoyageTextEmbedder(model="voyage-3")
+    text_embedder = VoyageTextEmbedder(model="voyage-4")
 
     print(text_embedder.run(text_to_embed))
 
@@ -86,7 +86,6 @@ class VoyageTextEmbedder:
             Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
             inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
         """
-        self.api_key = api_key
         self.model = model
         self.input_type = input_type
         self.truncate = truncate
@@ -95,12 +94,7 @@ class VoyageTextEmbedder:
         self.output_dimension = output_dimension
         self.output_dtype = output_dtype
 
-        if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
-        if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
-
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._init_client_lifecycle(api_key, timeout, max_retries)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -171,4 +165,39 @@ class VoyageTextEmbedder:
         # but we declare the output type as list[float] for Haystack pipeline compatibility.
         # The component respects the output_dtype parameter for API optimization, but the type contract
         # is always list[float] to ensure compatibility with downstream components like Retriever.
+        return {"embedding": embedding, "meta": meta}
+
+    @component.output_types(embedding=list[float], meta=dict[str, Any])
+    async def run_async(self, text: str) -> dict[str, Any]:
+        """
+        Embed a single string asynchronously.
+
+        :param text:
+            Text to embed.
+
+        :returns:
+            A dictionary with the following keys:
+            - `embedding`: The embedding of the input text.
+            - `meta`: Information about the usage of the model.
+        """
+        if not isinstance(text, str):
+            msg = (
+                "VoyageTextEmbedder expects a string as an input. "
+                "In case you want to embed a list of Documents, please use the VoyageDocumentEmbedder."
+            )
+            raise TypeError(msg)
+
+        text_to_embed = self.prefix + text + self.suffix
+
+        response = await self.async_client.embed(
+            texts=[text_to_embed],
+            model=self.model,
+            input_type=self.input_type,
+            truncation=self.truncate,
+            output_dtype=self.output_dtype,
+            output_dimension=self.output_dimension,
+        )
+        embedding = response.embeddings[0]
+        meta = {"total_tokens": response.total_tokens}
+
         return {"embedding": embedding, "meta": meta}

@@ -1,14 +1,15 @@
-import os
+from dataclasses import replace as dataclass_replace
 from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
 from tqdm import tqdm
-from voyageai import Client
+
+from haystack_integrations.components._voyage_client_mixin import VoyageClientMixin
 
 
 @component
-class VoyageDocumentEmbedder:
+class VoyageDocumentEmbedder(VoyageClientMixin):
     """
     A component for computing Document embeddings using Voyage Embedding models.
     The embedding of each Document is stored in the `embedding` field of the Document.
@@ -20,7 +21,7 @@ class VoyageDocumentEmbedder:
 
     doc = Document(content="I love pizza!")
 
-    document_embedder = VoyageDocumentEmbedder(model="voyage-3")
+    document_embedder = VoyageDocumentEmbedder(model="voyage-4")
 
     result = document_embedder.run([doc])
     print(result['documents'][0].embedding)
@@ -103,7 +104,6 @@ class VoyageDocumentEmbedder:
             Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
             inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
         """
-        self.api_key = api_key
         self.model = model
         self.input_type = input_type
         self.truncate = truncate
@@ -111,17 +111,15 @@ class VoyageDocumentEmbedder:
         self.suffix = suffix
         self.output_dimension = output_dimension
         self.output_dtype = output_dtype
+        if batch_size <= 0:
+            msg = f"batch_size must be > 0, but got {batch_size}"
+            raise ValueError(msg)
         self.batch_size = batch_size
         self.progress_bar = progress_bar
         self.metadata_fields_to_embed = metadata_fields_to_embed or []
         self.embedding_separator = embedding_separator
 
-        if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
-        if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
-
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._init_client_lifecycle(api_key, timeout, max_retries)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -178,13 +176,36 @@ class VoyageDocumentEmbedder:
             texts_to_embed.append(text_to_embed)
         return texts_to_embed
 
-    def _embed_batch(
+    async def _embed_batch(
         self, texts_to_embed: list[str], batch_size: int
     ) -> tuple[list[list[float] | list[int]], dict[str, Any]]:
         """
         Embed a list of texts in batches.
         """
 
+        all_embeddings: list[list[float] | list[int]] = []
+        meta: dict[str, Any] = {}
+        meta["total_tokens"] = 0
+        for i in tqdm(
+            range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
+        ):
+            batch = texts_to_embed[i : i + batch_size]
+            response = await self.async_client.embed(
+                texts=batch,
+                model=self.model,
+                input_type=self.input_type,
+                truncation=self.truncate,
+                output_dtype=self.output_dtype,
+                output_dimension=self.output_dimension,
+            )
+            all_embeddings.extend(response.embeddings)
+            meta["total_tokens"] += response.total_tokens
+
+        return all_embeddings, meta
+
+    def _embed_batch_sync(
+        self, texts_to_embed: list[str], batch_size: int
+    ) -> tuple[list[list[float] | list[int]], dict[str, Any]]:
         all_embeddings: list[list[float] | list[int]] = []
         meta: dict[str, Any] = {}
         meta["total_tokens"] = 0
@@ -218,7 +239,7 @@ class VoyageDocumentEmbedder:
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model.
         """
-        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+        if not isinstance(documents, list) or any(not isinstance(d, Document) for d in documents):
             msg = (
                 "VoyageDocumentEmbedder expects a list of Documents as input."
                 " In case you want to embed a string, please use the VoyageTextEmbedder."
@@ -227,9 +248,40 @@ class VoyageDocumentEmbedder:
 
         texts_to_embed = self._prepare_texts_to_embed(documents=documents)
 
-        embeddings, meta = self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
+        embeddings, meta = self._embed_batch_sync(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
 
+        new_documents = []
         for doc, emb in zip(documents, embeddings, strict=True):
-            doc.embedding = list(emb)
+            new_documents.append(dataclass_replace(doc, embedding=list(emb)))
 
-        return {"documents": documents, "meta": meta}
+        return {"documents": new_documents, "meta": meta}
+
+    @component.output_types(documents=list[Document], meta=dict[str, Any])
+    async def run_async(self, documents: list[Document]) -> dict[str, Any]:
+        """
+        Embed a list of Documents asynchronously.
+
+        :param documents:
+            Documents to embed.
+
+        :returns:
+            A dictionary with the following keys:
+            - `documents`: Documents with embeddings
+            - `meta`: Information about the usage of the model.
+        """
+        if not isinstance(documents, list) or any(not isinstance(d, Document) for d in documents):
+            msg = (
+                "VoyageDocumentEmbedder expects a list of Documents as input."
+                " In case you want to embed a string, please use the VoyageTextEmbedder."
+            )
+            raise TypeError(msg)
+
+        texts_to_embed = self._prepare_texts_to_embed(documents=documents)
+
+        embeddings, meta = await self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
+
+        new_documents = []
+        for doc, emb in zip(documents, embeddings, strict=True):
+            new_documents.append(dataclass_replace(doc, embedding=list(emb)))
+
+        return {"documents": new_documents, "meta": meta}

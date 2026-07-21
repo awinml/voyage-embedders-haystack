@@ -6,8 +6,12 @@ retrieval quality by preserving context between related document chunks.
 
 Contextualized embeddings encode chunks "in context" with other chunks from the
 same document, reducing context loss that occurs when chunks are embedded independently.
+
+This example requires a Voyage AI API key. Set it via the VOYAGE_API_KEY
+environment variable or in a .env file at the project root.
 """
 
+import asyncio
 import os
 
 try:
@@ -23,11 +27,8 @@ from haystack_integrations.components.embedders.voyage_embedders import (
     VoyageContextualizedDocumentEmbedder,
 )
 
-# Set API key (alternatively, set VOYAGE_API_KEY environment variable or load from .env file)
-# os.environ["VOYAGE_API_KEY"] = "your-api-key"
 
-
-def basic_example():
+async def basic_example():
     """Basic example showing how to use contextualized embeddings."""
     print("=== Basic Contextualized Embeddings Example ===\n")
 
@@ -59,12 +60,12 @@ def basic_example():
 
     # Initialize the contextualized embedder
     embedder = VoyageContextualizedDocumentEmbedder(
-        model="voyage-context-3",
+        model="voyage-context-4",
         input_type="document",  # Specify that these are documents, not queries
     )
 
     # Embed the documents
-    result = embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print(f"Embedded {len(result['documents'])} documents")
     print(f"Total tokens used: {result['meta']['total_tokens']}")
@@ -76,7 +77,7 @@ def basic_example():
     # through contextualized embedding
 
 
-def advanced_example_with_metadata():
+async def advanced_example_with_metadata():
     """Advanced example showing metadata embedding and custom parameters."""
     print("=== Advanced Contextualized Embeddings Example ===\n")
 
@@ -106,7 +107,7 @@ def advanced_example_with_metadata():
 
     # Initialize with custom parameters
     embedder = VoyageContextualizedDocumentEmbedder(
-        model="voyage-context-3",
+        model="voyage-context-4",
         input_type="document",
         output_dimension=512,  # Use smaller embedding dimension
         metadata_fields_to_embed=["category"],  # Embed category with the text
@@ -116,7 +117,7 @@ def advanced_example_with_metadata():
         source_id_field="source_id",  # Field used to group chunks (default)
     )
 
-    result = embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print(f"Embedded {len(result['documents'])} documents")
     print(f"Total tokens used: {result['meta']['total_tokens']}")
@@ -124,7 +125,7 @@ def advanced_example_with_metadata():
     print(f"Number of source documents: {len({doc.meta['source_id'] for doc in docs})}\n")
 
 
-def custom_source_field_example():
+async def custom_source_field_example():
     """Example showing how to use a custom field for grouping chunks."""
     print("=== Custom Source Field Example ===\n")
 
@@ -137,17 +138,17 @@ def custom_source_field_example():
 
     # Specify the custom field name with source_id_field parameter
     embedder = VoyageContextualizedDocumentEmbedder(
-        model="voyage-context-3",
+        model="voyage-context-4",
         source_id_field="parent_doc",  # Use 'parent_doc' instead of default 'source_id'
     )
 
-    result = embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print(f"Embedded {len(result['documents'])} documents using 'parent_doc' field")
     print(f"Total tokens used: {result['meta']['total_tokens']}\n")
 
 
-def comparison_with_standard_embeddings():
+async def comparison_with_standard_embeddings():
     """
     Example showing the difference between standard and contextualized embeddings.
 
@@ -168,9 +169,9 @@ def comparison_with_standard_embeddings():
     print("  - Context is lost when chunks are embedded independently\n")
 
     # Use contextualized embeddings
-    embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-3", input_type="document")
+    embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-4", input_type="document")
 
-    result = embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print("With CONTEXTUALIZED embeddings:")
     print('  - Query: "What was Apple\'s revenue growth?"')
@@ -179,7 +180,7 @@ def comparison_with_standard_embeddings():
     print(f"\nSuccessfully embedded {len(result['documents'])} documents with context preservation\n")
 
 
-if __name__ == "__main__":
+async def main():
     # Check if API key is set
     if not os.environ.get("VOYAGE_API_KEY"):
         print("Warning: VOYAGE_API_KEY environment variable is not set.")
@@ -187,12 +188,16 @@ if __name__ == "__main__":
 
     # Run all examples
     try:
-        basic_example()
-        advanced_example_with_metadata()
-        custom_source_field_example()
-        comparison_with_standard_embeddings()
+        await basic_example()
+        await advanced_example_with_metadata()
+        await custom_source_field_example()
+        await comparison_with_standard_embeddings()
 
         print("=== All examples completed successfully! ===")
     except Exception as e:
         print(f"Error running examples: {e}")
         print("Make sure you have set the VOYAGE_API_KEY environment variable.")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

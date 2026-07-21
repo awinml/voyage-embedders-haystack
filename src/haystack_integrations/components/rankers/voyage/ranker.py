@@ -1,9 +1,10 @@
-import os
+from dataclasses import replace as dataclass_replace
 from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict, logging
 from haystack.utils import Secret, deserialize_secrets_inplace
-from voyageai import Client
+
+from haystack_integrations.components._voyage_client_mixin import VoyageClientMixin
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ MAX_NUM_DOCS = 1000
 
 
 @component
-class VoyageRanker:
+class VoyageRanker(VoyageClientMixin):
     """
     A component for reranking using Voyage models.
 
@@ -20,7 +21,7 @@ class VoyageRanker:
     from haystack import Document
     from haystack_integrations.components.rankers.voyage.ranker import VoyageRanker
 
-    ranker = VoyageRanker(model="rerank-2", top_k=2)
+    ranker = VoyageRanker(model="rerank-2.5", top_k=2)
 
     docs = [Document(content="Paris"), Document(content="Berlin")]
     query = "What is the capital of germany?"
@@ -74,7 +75,6 @@ class VoyageRanker:
             Maximum retries to establish contact with VoyageAI if it returns an internal error, if not set it is
             inferred from the `VOYAGE_MAX_RETRIES` environment variable or set to 5.
         """
-        self.api_key = api_key
         self.model = model
         self.top_k = top_k
         self.truncate = truncate
@@ -83,12 +83,7 @@ class VoyageRanker:
         self.meta_fields_to_embed = meta_fields_to_embed or []
         self.meta_data_separator = meta_data_separator
 
-        if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
-        if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
-
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._init_client_lifecycle(api_key, timeout, max_retries)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -141,6 +136,36 @@ class VoyageRanker:
 
         return concatenated_input_list
 
+    def _validate_top_k(self, top_k: int | None) -> int | None:
+        """Resolve top_k from the argument or instance default, validating it's positive."""
+        resolved = top_k if top_k is not None else self.top_k
+        if resolved is not None and resolved <= 0:
+            msg = f"top_k must be > 0, but got {resolved}"
+            raise ValueError(msg)
+        return resolved
+
+    def _truncate_documents(self, input_docs: list[str]) -> list[str]:
+        """Truncate documents to MAX_NUM_DOCS if needed."""
+        if len(input_docs) > MAX_NUM_DOCS:
+            logger.warning(
+                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents."
+                f" The number of documents has been truncated to {MAX_NUM_DOCS}"
+                f" from {len(input_docs)}."
+            )
+            input_docs = input_docs[:MAX_NUM_DOCS]
+        return input_docs
+
+    def _build_rerank_response(
+        self,
+        documents: list[Document],
+        response_results: list[Any],
+    ) -> list[Document]:
+        """Map rerank API response back to Document objects with scores."""
+        sorted_docs = []
+        for output in response_results:
+            sorted_docs.append(dataclass_replace(documents[output.index], score=output.relevance_score))
+        return sorted_docs
+
     @component.output_types(documents=list[Document])
     def run(self, query: str, documents: list[Document], top_k: int | None = None) -> dict[str, list[Document]]:
         """
@@ -158,19 +183,9 @@ class VoyageRanker:
 
         :raises ValueError: If `top_k` is not > 0.
         """
-        top_k = top_k or self.top_k
-        if top_k is not None and top_k <= 0:
-            msg = f"top_k must be > 0, but got {top_k}"
-            raise ValueError(msg)
-
+        top_k = self._validate_top_k(top_k)
         input_docs = self._prepare_input_docs(documents)
-        if len(input_docs) > MAX_NUM_DOCS:
-            logger.warning(
-                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents.\
-                The number of documents has been truncated to {MAX_NUM_DOCS} \
-                from {len(input_docs)}."
-            )
-            input_docs = input_docs[:MAX_NUM_DOCS]
+        input_docs = self._truncate_documents(input_docs)
 
         response = self.client.rerank(
             model=self.model,
@@ -178,11 +193,37 @@ class VoyageRanker:
             documents=input_docs,
             top_k=top_k,
         )
-        indices = [output.index for output in response.results]
-        scores = [output.relevance_score for output in response.results]
-        sorted_docs = []
-        for idx, score in zip(indices, scores, strict=True):
-            doc = documents[idx]
-            doc.score = score
-            sorted_docs.append(documents[idx])
+        sorted_docs = self._build_rerank_response(documents, response.results)
+        return {"documents": sorted_docs}
+
+    @component.output_types(documents=list[Document])
+    async def run_async(
+        self, query: str, documents: list[Document], top_k: int | None = None
+    ) -> dict[str, list[Document]]:
+        """
+        Use the Voyage AI Reranker to re-rank the list of documents based on the query (async).
+
+        :param query:
+            Query string.
+        :param documents:
+            List of Documents.
+        :param top_k:
+            The maximum number of Documents you want the Ranker to return.
+        :returns:
+            A dictionary with the following keys:
+            - `documents`: List of Documents most similar to the given query in descending order of similarity.
+
+        :raises ValueError: If `top_k` is not > 0.
+        """
+        top_k = self._validate_top_k(top_k)
+        input_docs = self._prepare_input_docs(documents)
+        input_docs = self._truncate_documents(input_docs)
+
+        response = await self.async_client.rerank(
+            model=self.model,
+            query=query,
+            documents=input_docs,
+            top_k=top_k,
+        )
+        sorted_docs = self._build_rerank_response(documents, response.results)
         return {"documents": sorted_docs}
