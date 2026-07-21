@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from haystack.utils.auth import Secret
@@ -243,6 +243,45 @@ class TestVoyageTextEmbedder:
         embedder_int8 = VoyageTextEmbedder(model="voyage-4", output_dtype="int8", timeout=120, max_retries=10)
         result_int8 = embedder_int8.run(text="test")
         assert len(result_int8["embedding"]) == 1024
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_mocked_api(self):
+        """Test run_async method with mocked async API client."""
+        embedder = VoyageTextEmbedder(
+            model="voyage-3",
+            prefix="prefix ",
+            suffix=" suffix",
+            api_key=Secret.from_token("fake-api-key"),
+        )
+
+        mock_response = Mock()
+        mock_response.embeddings = [[0.1] * 1024]
+        mock_response.total_tokens = 6
+        embedder._async_client = MagicMock()
+        embedder._async_client.embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(text="The food was delicious")
+
+        assert len(result["embedding"]) == 1024
+        assert all(isinstance(x, float) for x in result["embedding"])
+        assert result["meta"]["total_tokens"] == 6
+
+        # Verify the async client was called
+        embedder._async_client.embed.assert_called_once()
+        call_kwargs = embedder._async_client.embed.call_args[1]
+        assert call_kwargs["texts"] == ["prefix The food was delicious suffix"]
+        assert call_kwargs["model"] == "voyage-3"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_wrong_input_format(self):
+        """Test run_async raises TypeError for non-string input."""
+        embedder = VoyageTextEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
+
+        with pytest.raises(TypeError, match="VoyageTextEmbedder expects a string as an input"):
+            await embedder.run_async(text=[1, 2, 3])
 
     @pytest.mark.unit
     @pytest.mark.asyncio

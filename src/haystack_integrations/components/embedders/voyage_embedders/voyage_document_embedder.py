@@ -111,6 +111,9 @@ class VoyageDocumentEmbedder(VoyageClientMixin):
         self.suffix = suffix
         self.output_dimension = output_dimension
         self.output_dtype = output_dtype
+        if batch_size <= 0:
+            msg = f"batch_size must be > 0, but got {batch_size}"
+            raise ValueError(msg)
         self.batch_size = batch_size
         self.progress_bar = progress_bar
         self.metadata_fields_to_embed = metadata_fields_to_embed or []
@@ -236,7 +239,7 @@ class VoyageDocumentEmbedder(VoyageClientMixin):
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model.
         """
-        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+        if not isinstance(documents, list) or any(not isinstance(d, Document) for d in documents):
             msg = (
                 "VoyageDocumentEmbedder expects a list of Documents as input."
                 " In case you want to embed a string, please use the VoyageTextEmbedder."
@@ -266,7 +269,7 @@ class VoyageDocumentEmbedder(VoyageClientMixin):
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model.
         """
-        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+        if not isinstance(documents, list) or any(not isinstance(d, Document) for d in documents):
             msg = (
                 "VoyageDocumentEmbedder expects a list of Documents as input."
                 " In case you want to embed a string, please use the VoyageTextEmbedder."

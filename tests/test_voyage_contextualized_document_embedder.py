@@ -260,6 +260,94 @@ class TestVoyageContextualizedDocumentEmbedder:
         assert embedder.chunk_fn is _custom_chunk_fn
 
     @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_mocked_client(self, monkeypatch):
+        """Test run_async end-to-end with mocked async API client."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        docs = [
+            Document(content="Test content 1", meta={"source_id": "doc1"}),
+            Document(content="Test content 2", meta={"source_id": "doc1"}),
+        ]
+
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        mock_result = MagicMock()
+        mock_result.embeddings = [[0.1, 0.2], [0.3, 0.4]]
+
+        mock_response = MagicMock()
+        mock_response.results = [mock_result]
+        mock_response.total_tokens = 10
+
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(documents=docs)
+
+        assert len(result["documents"]) == 2
+        assert result["documents"][0].embedding == [0.1, 0.2]
+        assert result["documents"][1].embedding == [0.3, 0.4]
+        assert result["meta"]["total_tokens"] == 10
+
+        embedder._async_client.contextualized_embed.assert_called_once()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_on_empty_list(self, monkeypatch):
+        """Test run_async returns empty results for empty input."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        result = await embedder.run_async(documents=[])
+
+        assert result["documents"] == []
+        assert result["meta"]["total_tokens"] == 0
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_wrong_input_format(self):
+        """Test run_async raises TypeError for non-Document input."""
+        embedder = VoyageContextualizedDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
+
+        with pytest.raises(
+            TypeError, match="VoyageContextualizedDocumentEmbedder expects a list of Documents as input"
+        ):
+            await embedder.run_async(documents="text")
+
+    @pytest.mark.unit
+    def test_embed_batch_sync_multiple_groups(self, monkeypatch):
+        """Test the synchronous _embed_batch_sync method."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageContextualizedDocumentEmbedder(batch_size=1, progress_bar=False)
+
+        mock_result1 = MagicMock()
+        mock_result1.embeddings = [[0.1, 0.2]]
+        mock_response1 = MagicMock()
+        mock_response1.results = [mock_result1]
+        mock_response1.total_tokens = 5
+
+        mock_result2 = MagicMock()
+        mock_result2.embeddings = [[0.3, 0.4]]
+        mock_response2 = MagicMock()
+        mock_response2.results = [mock_result2]
+        mock_response2.total_tokens = 6
+
+        embedder._async_client = MagicMock()
+        embedder._client = MagicMock()
+        embedder._client.contextualized_embed = MagicMock(side_effect=[mock_response1, mock_response2])
+
+        grouped_texts = [["text1"], ["text2"]]
+        embeddings, meta = embedder._embed_batch_sync(grouped_texts, batch_size=1)
+
+        assert len(embeddings) == 2
+        assert embeddings[0] == [0.1, 0.2]
+        assert embeddings[1] == [0.3, 0.4]
+        assert meta["total_tokens"] == 11
+        assert embedder._client.contextualized_embed.call_count == 2
+
+    @pytest.mark.unit
     def test_prepare_texts_to_embed_w_metadata(self):
         documents = [
             Document(content=f"document number {i}: content", meta={"meta_field": f"meta_value {i}"}) for i in range(5)

@@ -65,7 +65,7 @@ async def basic_example():
     )
 
     # Embed the documents
-    result = await embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print(f"Embedded {len(result['documents'])} documents")
     print(f"Total tokens used: {result['meta']['total_tokens']}")
@@ -117,7 +117,7 @@ async def advanced_example_with_metadata():
         source_id_field="source_id",  # Field used to group chunks (default)
     )
 
-    result = await embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print(f"Embedded {len(result['documents'])} documents")
     print(f"Total tokens used: {result['meta']['total_tokens']}")
@@ -142,7 +142,7 @@ async def custom_source_field_example():
         source_id_field="parent_doc",  # Use 'parent_doc' instead of default 'source_id'
     )
 
-    result = await embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print(f"Embedded {len(result['documents'])} documents using 'parent_doc' field")
     print(f"Total tokens used: {result['meta']['total_tokens']}\n")
@@ -171,7 +171,7 @@ async def comparison_with_standard_embeddings():
     # Use contextualized embeddings
     embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-4", input_type="document")
 
-    result = await embedder.run(documents=docs)
+    result = await embedder.run_async(documents=docs)
 
     print("With CONTEXTUALIZED embeddings:")
     print('  - Query: "What was Apple\'s revenue growth?"')

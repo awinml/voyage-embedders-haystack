@@ -23,7 +23,7 @@ async def main():
 
     docs = [Document(content="Paris"), Document(content="Berlin")]
     query = "What is the capital of germany?"
-    output = await ranker.run(query=query, documents=docs)
+    output = await ranker.run_async(query=query, documents=docs)
     docs = output["documents"]
 
     for doc in docs:

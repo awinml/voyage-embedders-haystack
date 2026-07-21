@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, Mock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from haystack import Document
@@ -451,3 +451,84 @@ class TestVoyageDocumentEmbedder:
         embedder_int8 = VoyageDocumentEmbedder(model="voyage-4", output_dtype="int8", timeout=120, max_retries=10)
         result_int8 = embedder_int8.run(documents=[Document(content="test")])
         assert len(result_int8["documents"][0].embedding) == 1024
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_mocked_api(self):
+        """Test run_async with mocked async API client."""
+        docs = [
+            Document(content="I love cheese", meta={"topic": "Cuisine"}),
+            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
+        ]
+
+        embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
+            prefix="prefix ",
+            suffix=" suffix",
+            metadata_fields_to_embed=["topic"],
+            embedding_separator=" | ",
+            api_key=Secret.from_token("fake-api-key"),
+        )
+
+        mock_response = Mock()
+        mock_response.embeddings = [
+            [0.1] * 1024,
+            [0.4] * 1024,
+        ]
+        mock_response.total_tokens = 18
+        embedder._async_client = MagicMock()
+        embedder._async_client.embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(documents=docs)
+
+        documents_with_embeddings = result["documents"]
+        assert isinstance(documents_with_embeddings, list)
+        assert len(documents_with_embeddings) == 2
+        for doc in documents_with_embeddings:
+            assert isinstance(doc, Document)
+            assert isinstance(doc.embedding, list)
+            assert len(doc.embedding) == 1024
+        assert result["meta"]["total_tokens"] == 18
+
+        embedder._async_client.embed.assert_called_once()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_mocked_api_batch_processing(self):
+        """Test run_async processes documents in batches via async client."""
+        docs = [Document(content=f"content {i}") for i in range(5)]
+
+        embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
+            api_key=Secret.from_token("fake-api-key"),
+            batch_size=2,
+        )
+
+        async def make_batch_response(texts, **_):
+            mock_response = Mock()
+            mock_response.embeddings = [[0.1] * 1024 for _ in range(len(texts))]
+            mock_response.total_tokens = len(texts) * 6
+            return mock_response
+
+        embedder._async_client = MagicMock()
+        embedder._async_client.embed = AsyncMock(side_effect=make_batch_response)
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(documents=docs)
+
+        assert len(result["documents"]) == 5
+        assert all(len(doc.embedding) == 1024 for doc in result["documents"])
+        assert embedder._async_client.embed.call_count == 3  # 5 docs / 2 batch_size = 3 batches
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_wrong_input_format(self):
+        """Test run_async raises TypeError for non-Document input."""
+        embedder = VoyageDocumentEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
+
+        with pytest.raises(TypeError, match="VoyageDocumentEmbedder expects a list of Documents as input"):
+            await embedder.run_async(documents="text")
+
+        with pytest.raises(TypeError, match="VoyageDocumentEmbedder expects a list of Documents as input"):
+            await embedder.run_async(documents=[1, 2, 3])

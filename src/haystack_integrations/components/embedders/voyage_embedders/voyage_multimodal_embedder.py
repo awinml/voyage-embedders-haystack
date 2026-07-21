@@ -199,16 +199,41 @@ class VoyageMultimodalEmbedder(VoyageClientMixin):
             prepared.append(prepared_items)
         return prepared
 
-    def _embed_batch_sync(
-        self, inputs: list[list[Union[str, "Image.Image", "Video"]]], batch_size: int
-    ) -> tuple[list[list[float]], dict[str, Any]]:
-        all_embeddings: list[list[float]] = []
-        meta: dict[str, Any] = {
+    def _build_multimodal_api_params(self, batch: list) -> dict[str, Any]:
+        """Build shared API parameters for a multimodal embed batch."""
+        api_params: dict[str, Any] = {
+            "inputs": batch,
+            "model": self.model,
+            "truncation": self.truncate,
+        }
+        if self.input_type is not None:
+            api_params["input_type"] = self.input_type
+        if self.output_dimension is not None:
+            api_params["output_dimension"] = self.output_dimension
+        if self.output_dtype is not None:
+            api_params["output_dtype"] = self.output_dtype
+        return api_params
+
+    def _accumulate_multimodal_meta(self, meta: dict[str, Any], response: Any) -> None:
+        """Accumulate token/pixel counts from a response into the shared meta dict."""
+        meta["text_tokens"] += response.text_tokens
+        meta["image_pixels"] += response.image_pixels
+        meta["video_pixels"] += response.video_pixels
+        meta["total_tokens"] += response.total_tokens
+
+    def _init_multimodal_meta(self) -> dict[str, Any]:
+        return {
             "text_tokens": 0,
             "image_pixels": 0,
             "video_pixels": 0,
             "total_tokens": 0,
         }
+
+    def _embed_batch_sync(
+        self, inputs: list[list[Union[str, "Image.Image", "Video"]]], batch_size: int
+    ) -> tuple[list[list[float]], dict[str, Any]]:
+        all_embeddings: list[list[float]] = []
+        meta = self._init_multimodal_meta()
 
         for i in tqdm(
             range(0, len(inputs), batch_size),
@@ -216,27 +241,10 @@ class VoyageMultimodalEmbedder(VoyageClientMixin):
             desc="Calculating multimodal embeddings",
         ):
             batch = inputs[i : i + batch_size]
-
-            api_params: dict[str, Any] = {
-                "inputs": batch,
-                "model": self.model,
-                "truncation": self.truncate,
-            }
-
-            if self.input_type is not None:
-                api_params["input_type"] = self.input_type
-            if self.output_dimension is not None:
-                api_params["output_dimension"] = self.output_dimension
-            if self.output_dtype is not None:
-                api_params["output_dtype"] = self.output_dtype
-
+            api_params = self._build_multimodal_api_params(batch)
             response = self.client.multimodal_embed(**api_params)
-
             all_embeddings.extend(response.embeddings)
-            meta["text_tokens"] += response.text_tokens
-            meta["image_pixels"] += response.image_pixels
-            meta["video_pixels"] += response.video_pixels
-            meta["total_tokens"] += response.total_tokens
+            self._accumulate_multimodal_meta(meta, response)
 
         return all_embeddings, meta
 
@@ -254,12 +262,7 @@ class VoyageMultimodalEmbedder(VoyageClientMixin):
             Tuple of (embeddings, metadata).
         """
         all_embeddings: list[list[float]] = []
-        meta: dict[str, Any] = {
-            "text_tokens": 0,
-            "image_pixels": 0,
-            "video_pixels": 0,
-            "total_tokens": 0,
-        }
+        meta = self._init_multimodal_meta()
 
         for i in tqdm(
             range(0, len(inputs), batch_size),
@@ -267,27 +270,10 @@ class VoyageMultimodalEmbedder(VoyageClientMixin):
             desc="Calculating multimodal embeddings",
         ):
             batch = inputs[i : i + batch_size]
-
-            api_params: dict[str, Any] = {
-                "inputs": batch,
-                "model": self.model,
-                "truncation": self.truncate,
-            }
-
-            if self.input_type is not None:
-                api_params["input_type"] = self.input_type
-            if self.output_dimension is not None:
-                api_params["output_dimension"] = self.output_dimension
-            if self.output_dtype is not None:
-                api_params["output_dtype"] = self.output_dtype
-
+            api_params = self._build_multimodal_api_params(batch)
             response = await self.async_client.multimodal_embed(**api_params)
-
             all_embeddings.extend(response.embeddings)
-            meta["text_tokens"] += response.text_tokens
-            meta["image_pixels"] += response.image_pixels
-            meta["video_pixels"] += response.video_pixels
-            meta["total_tokens"] += response.total_tokens
+            self._accumulate_multimodal_meta(meta, response)
 
         return all_embeddings, meta
 

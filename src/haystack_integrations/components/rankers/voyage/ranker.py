@@ -136,6 +136,36 @@ class VoyageRanker(VoyageClientMixin):
 
         return concatenated_input_list
 
+    def _validate_top_k(self, top_k: int | None) -> int | None:
+        """Resolve top_k from the argument or instance default, validating it's positive."""
+        resolved = top_k if top_k is not None else self.top_k
+        if resolved is not None and resolved <= 0:
+            msg = f"top_k must be > 0, but got {resolved}"
+            raise ValueError(msg)
+        return resolved
+
+    def _truncate_documents(self, input_docs: list[str]) -> list[str]:
+        """Truncate documents to MAX_NUM_DOCS if needed."""
+        if len(input_docs) > MAX_NUM_DOCS:
+            logger.warning(
+                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents."
+                f" The number of documents has been truncated to {MAX_NUM_DOCS}"
+                f" from {len(input_docs)}."
+            )
+            input_docs = input_docs[:MAX_NUM_DOCS]
+        return input_docs
+
+    def _build_rerank_response(
+        self,
+        documents: list[Document],
+        response_results: list[Any],
+    ) -> list[Document]:
+        """Map rerank API response back to Document objects with scores."""
+        sorted_docs = []
+        for output in response_results:
+            sorted_docs.append(dataclass_replace(documents[output.index], score=output.relevance_score))
+        return sorted_docs
+
     @component.output_types(documents=list[Document])
     def run(self, query: str, documents: list[Document], top_k: int | None = None) -> dict[str, list[Document]]:
         """
@@ -153,19 +183,9 @@ class VoyageRanker(VoyageClientMixin):
 
         :raises ValueError: If `top_k` is not > 0.
         """
-        top_k = top_k or self.top_k
-        if top_k is not None and top_k <= 0:
-            msg = f"top_k must be > 0, but got {top_k}"
-            raise ValueError(msg)
-
+        top_k = self._validate_top_k(top_k)
         input_docs = self._prepare_input_docs(documents)
-        if len(input_docs) > MAX_NUM_DOCS:
-            logger.warning(
-                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents."
-                f" The number of documents has been truncated to {MAX_NUM_DOCS}"
-                f" from {len(input_docs)}."
-            )
-            input_docs = input_docs[:MAX_NUM_DOCS]
+        input_docs = self._truncate_documents(input_docs)
 
         response = self.client.rerank(
             model=self.model,
@@ -173,11 +193,7 @@ class VoyageRanker(VoyageClientMixin):
             documents=input_docs,
             top_k=top_k,
         )
-        indices = [output.index for output in response.results]
-        scores = [output.relevance_score for output in response.results]
-        sorted_docs = []
-        for idx, score in zip(indices, scores, strict=True):
-            sorted_docs.append(dataclass_replace(documents[idx], score=score))
+        sorted_docs = self._build_rerank_response(documents, response.results)
         return {"documents": sorted_docs}
 
     @component.output_types(documents=list[Document])
@@ -199,19 +215,9 @@ class VoyageRanker(VoyageClientMixin):
 
         :raises ValueError: If `top_k` is not > 0.
         """
-        top_k = top_k or self.top_k
-        if top_k is not None and top_k <= 0:
-            msg = f"top_k must be > 0, but got {top_k}"
-            raise ValueError(msg)
-
+        top_k = self._validate_top_k(top_k)
         input_docs = self._prepare_input_docs(documents)
-        if len(input_docs) > MAX_NUM_DOCS:
-            logger.warning(
-                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents."
-                f" The number of documents has been truncated to {MAX_NUM_DOCS}"
-                f" from {len(input_docs)}."
-            )
-            input_docs = input_docs[:MAX_NUM_DOCS]
+        input_docs = self._truncate_documents(input_docs)
 
         response = await self.async_client.rerank(
             model=self.model,
@@ -219,9 +225,5 @@ class VoyageRanker(VoyageClientMixin):
             documents=input_docs,
             top_k=top_k,
         )
-        indices = [output.index for output in response.results]
-        scores = [output.relevance_score for output in response.results]
-        sorted_docs = []
-        for idx, score in zip(indices, scores, strict=True):
-            sorted_docs.append(dataclass_replace(documents[idx], score=score))
+        sorted_docs = self._build_rerank_response(documents, response.results)
         return {"documents": sorted_docs}

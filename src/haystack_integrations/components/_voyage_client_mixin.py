@@ -54,5 +54,7 @@ class VoyageClientMixin:
         if self._client is not None and self._async_client is not None:
             return
         api_key = self.api_key.resolve_value()
-        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
-        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        if self._client is None:
+            self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        if self._async_client is None:
+            self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)

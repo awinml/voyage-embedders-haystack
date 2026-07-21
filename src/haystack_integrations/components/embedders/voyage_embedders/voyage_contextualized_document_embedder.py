@@ -206,12 +206,32 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
 
         return dict(grouped_docs), source_order
 
+    def _build_contextualized_api_params(self, batch: list[list[str]]) -> dict[str, Any]:
+        """Build shared API parameters for a contextualized embed batch."""
+        api_params: dict[str, Any] = {
+            "inputs": batch,
+            "model": self.model,
+        }
+        if self.input_type is not None:
+            api_params["input_type"] = self.input_type
+        if self.output_dtype is not None:
+            api_params["output_dtype"] = self.output_dtype
+        if self.output_dimension is not None:
+            api_params["output_dimension"] = self.output_dimension
+        if self.chunk_fn is not None:
+            api_params["chunk_fn"] = self.chunk_fn
+        return api_params
+
+    def _accumulate_contextualized_embeddings(self, all_embeddings: list[list[int | float]], response: Any) -> None:
+        """Extend the embeddings list with results from a contextualized embed response."""
+        for result in response.results:
+            all_embeddings.extend(cast(list[list[int | float]], result.embeddings))
+
     def _embed_batch_sync(
         self, grouped_texts: list[list[str]], batch_size: int
     ) -> tuple[list[list[int | float]], dict[str, Any]]:
         all_embeddings: list[list[int | float]] = []
-        meta: dict[str, Any] = {}
-        meta["total_tokens"] = 0
+        meta: dict[str, Any] = {"total_tokens": 0}
 
         for i in tqdm(
             range(0, len(grouped_texts), batch_size),
@@ -219,25 +239,9 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             desc="Calculating contextualized embeddings",
         ):
             batch = grouped_texts[i : i + batch_size]
-
-            api_params: dict[str, Any] = {}
-            api_params["inputs"] = batch
-            api_params["model"] = self.model
-
-            if self.input_type is not None:
-                api_params["input_type"] = self.input_type
-            if self.output_dtype is not None:
-                api_params["output_dtype"] = self.output_dtype
-            if self.output_dimension is not None:
-                api_params["output_dimension"] = self.output_dimension
-            if self.chunk_fn is not None:
-                api_params["chunk_fn"] = self.chunk_fn
-
+            api_params = self._build_contextualized_api_params(batch)
             response = self.client.contextualized_embed(**api_params)
-
-            for result in response.results:
-                all_embeddings.extend(cast(list[list[int | float]], result.embeddings))
-
+            self._accumulate_contextualized_embeddings(all_embeddings, response)
             meta["total_tokens"] += response.total_tokens
 
         return all_embeddings, meta
@@ -257,8 +261,7 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             corresponding to the flattened input texts.
         """
         all_embeddings: list[list[int | float]] = []
-        meta: dict[str, Any] = {}
-        meta["total_tokens"] = 0
+        meta: dict[str, Any] = {"total_tokens": 0}
 
         for i in tqdm(
             range(0, len(grouped_texts), batch_size),
@@ -266,25 +269,9 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             desc="Calculating contextualized embeddings",
         ):
             batch = grouped_texts[i : i + batch_size]
-
-            api_params: dict[str, Any] = {}
-            api_params["inputs"] = batch
-            api_params["model"] = self.model
-
-            if self.input_type is not None:
-                api_params["input_type"] = self.input_type
-            if self.output_dtype is not None:
-                api_params["output_dtype"] = self.output_dtype
-            if self.output_dimension is not None:
-                api_params["output_dimension"] = self.output_dimension
-            if self.chunk_fn is not None:
-                api_params["chunk_fn"] = self.chunk_fn
-
+            api_params = self._build_contextualized_api_params(batch)
             response = await self.async_client.contextualized_embed(**api_params)
-
-            for result in response.results:
-                all_embeddings.extend(cast(list[list[int | float]], result.embeddings))
-
+            self._accumulate_contextualized_embeddings(all_embeddings, response)
             meta["total_tokens"] += response.total_tokens
 
         return all_embeddings, meta
@@ -305,7 +292,7 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model
         """
-        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+        if not isinstance(documents, list) or any(not isinstance(d, Document) for d in documents):
             msg = (
                 "VoyageContextualizedDocumentEmbedder expects a list of Documents as input. "
                 "In case you want to embed a string, please use the VoyageTextEmbedder."
@@ -319,6 +306,7 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
 
         grouped_texts = []
         original_indices: list[int] = []
+        doc_cursor: dict[int, int] = defaultdict(int)
         doc_positions: dict[int, list[int]] = {}
         for i, d in enumerate(documents):
             doc_positions.setdefault(id(d), []).append(i)
@@ -326,12 +314,17 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             docs = grouped_docs[source_id]
             grouped_texts.append(self._prepare_texts_to_embed(docs))
             for d in docs:
-                original_indices.append(doc_positions[id(d)].pop(0))
+                pos = doc_cursor[id(d)]
+                original_indices.append(doc_positions[id(d)][pos])
+                doc_cursor[id(d)] = pos + 1
 
         embeddings, meta = self._embed_batch_sync(grouped_texts, batch_size=self.batch_size)
 
+        # When chunk_fn splits a document into more chunks than the original document,
+        # the number of embeddings will exceed the number of original indices.
+        # Use loose zip to handle both 1:1 and N:1 mappings gracefully.
         enriched = list(documents)
-        for emb, idx in zip(embeddings, original_indices, strict=True):
+        for emb, idx in zip(embeddings, original_indices, strict=False):
             enriched[idx] = dataclass_replace(enriched[idx], embedding=emb)
 
         return {"documents": enriched, "meta": meta}
@@ -352,7 +345,7 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             - `documents`: Documents with embeddings
             - `meta`: Information about the usage of the model
         """
-        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+        if not isinstance(documents, list) or any(not isinstance(d, Document) for d in documents):
             msg = (
                 "VoyageContextualizedDocumentEmbedder expects a list of Documents as input. "
                 "In case you want to embed a string, please use the VoyageTextEmbedder."
@@ -366,6 +359,7 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
 
         grouped_texts = []
         original_indices: list[int] = []
+        doc_cursor: dict[int, int] = defaultdict(int)
         doc_positions: dict[int, list[int]] = {}
         for i, d in enumerate(documents):
             doc_positions.setdefault(id(d), []).append(i)
@@ -373,12 +367,17 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
             docs = grouped_docs[source_id]
             grouped_texts.append(self._prepare_texts_to_embed(docs))
             for d in docs:
-                original_indices.append(doc_positions[id(d)].pop(0))
+                pos = doc_cursor[id(d)]
+                original_indices.append(doc_positions[id(d)][pos])
+                doc_cursor[id(d)] = pos + 1
 
         embeddings, meta = await self._embed_batch(grouped_texts, batch_size=self.batch_size)
 
+        # When chunk_fn splits a document into more chunks than the original document,
+        # the number of embeddings will exceed the number of original indices.
+        # Use loose zip to handle both 1:1 and N:1 mappings gracefully.
         enriched = list(documents)
-        for emb, idx in zip(embeddings, original_indices, strict=True):
+        for emb, idx in zip(embeddings, original_indices, strict=False):
             enriched[idx] = dataclass_replace(enriched[idx], embedding=emb)
 
         return {"documents": enriched, "meta": meta}

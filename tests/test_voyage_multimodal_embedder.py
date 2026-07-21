@@ -1,6 +1,6 @@
 import io
 import os
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from haystack.dataclasses import ByteStream
@@ -554,6 +554,145 @@ class TestVoyageMultimodalEmbedder:
         assert len(inputs) == 1
         assert inputs[0][0] == "Describe this video:"
         assert inputs[0][1] is mock_video
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_mocked_client(self, monkeypatch):
+        """Test run_async with mocked async API client."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageMultimodalEmbedder()
+
+        mock_response = MagicMock()
+        mock_response.embeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+        mock_response.text_tokens = 10
+        mock_response.image_pixels = 0
+        mock_response.video_pixels = 0
+        mock_response.total_tokens = 10
+
+        embedder._async_client = MagicMock()
+        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(inputs=[["Hello world"], ["Test input"]])
+
+        assert len(result["embeddings"]) == 2
+        assert result["embeddings"][0] == [0.1, 0.2, 0.3]
+        assert result["embeddings"][1] == [0.4, 0.5, 0.6]
+        assert result["meta"]["text_tokens"] == 10
+
+        embedder._async_client.multimodal_embed.assert_called_once()
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_all_parameters(self, monkeypatch):
+        """Test run_async with all optional parameters set."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageMultimodalEmbedder(
+            input_type="query",
+            output_dimension=512,
+            output_dtype="int8",
+        )
+
+        mock_response = MagicMock()
+        mock_response.embeddings = [[0.1, 0.2]]
+        mock_response.text_tokens = 5
+        mock_response.image_pixels = 0
+        mock_response.video_pixels = 0
+        mock_response.total_tokens = 5
+
+        embedder._async_client = MagicMock()
+        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+
+        await embedder.run_async(inputs=[["Query text"]])
+
+        call_kwargs = embedder._async_client.multimodal_embed.call_args[1]
+        assert call_kwargs["input_type"] == "query"
+        assert call_kwargs["output_dimension"] == 512
+        assert call_kwargs["output_dtype"] == "int8"
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_batching(self, monkeypatch):
+        """Test run_async processes inputs in batches."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageMultimodalEmbedder(batch_size=2, progress_bar=False)
+
+        mock_response1 = MagicMock()
+        mock_response1.embeddings = [[0.1, 0.2], [0.3, 0.4]]
+        mock_response1.text_tokens = 5
+        mock_response1.image_pixels = 0
+        mock_response1.video_pixels = 0
+        mock_response1.total_tokens = 5
+
+        mock_response2 = MagicMock()
+        mock_response2.embeddings = [[0.5, 0.6]]
+        mock_response2.text_tokens = 3
+        mock_response2.image_pixels = 0
+        mock_response2.video_pixels = 0
+        mock_response2.total_tokens = 3
+
+        embedder._async_client = MagicMock()
+        embedder._async_client.multimodal_embed = AsyncMock(side_effect=[mock_response1, mock_response2])
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(inputs=[["text1"], ["text2"], ["text3"]])
+
+        assert len(result["embeddings"]) == 3
+        assert embedder._async_client.multimodal_embed.call_count == 2
+        assert result["meta"]["text_tokens"] == 8
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_image_content(self, monkeypatch):
+        """Test run_async with image content."""
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+
+        embedder = VoyageMultimodalEmbedder(progress_bar=False)
+
+        img = Image.new("RGB", (10, 10), color="red")
+
+        mock_response = MagicMock()
+        mock_response.embeddings = [[0.1, 0.2, 0.3]]
+        mock_response.text_tokens = 2
+        mock_response.image_pixels = 100
+        mock_response.video_pixels = 0
+        mock_response.total_tokens = 12
+
+        embedder._async_client = MagicMock()
+        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+
+        result = await embedder.run_async(inputs=[["Describe this image:", img]])
+
+        assert len(result["embeddings"]) == 1
+        assert result["meta"]["image_pixels"] == 100
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_wrong_input_format(self):
+        """Test run_async raises TypeError for invalid input."""
+        embedder = VoyageMultimodalEmbedder(api_key=Secret.from_token("fake-api-key"))
+
+        with pytest.raises(TypeError, match="VoyageMultimodalEmbedder expects a list of inputs"):
+            await embedder.run_async(inputs="text")
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_on_empty_list(self):
+        """Test run_async returns empty results for empty input."""
+        embedder = VoyageMultimodalEmbedder(api_key=Secret.from_token("fake-api-key"))
+
+        result = await embedder.run_async(inputs=[])
+
+        assert result["embeddings"] == []
+        assert result["meta"]["text_tokens"] == 0
+        assert result["meta"]["image_pixels"] == 0
+        assert result["meta"]["video_pixels"] == 0
+        assert result["meta"]["total_tokens"] == 0
 
     @pytest.mark.unit
     def test_convert_content_item_handles_video_import_missing(self, monkeypatch):

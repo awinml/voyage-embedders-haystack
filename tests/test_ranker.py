@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from haystack import Document
@@ -271,6 +271,121 @@ class TestVoyageTextReranker:
 
         with pytest.raises(ValueError, match="top_k must be > 0"):
             reranker.run(query="test query", documents=documents)
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_mocked_client(self):
+        """Test run_async with mocked async API client."""
+        reranker = VoyageRanker(
+            model="rerank-2.5",
+            api_key=Secret.from_token("fake-api-key"),
+            prefix="prefix ",
+            suffix=" suffix",
+        )
+
+        documents = [
+            Document(content="Paris is in France"),
+            Document(content="Berlin is in Germany"),
+            Document(content="Lyon is in France"),
+        ]
+
+        mock_outputs = [MagicMock(index=0, relevance_score=0.95), MagicMock(index=1, relevance_score=0.85)]
+
+        mock_response = MagicMock()
+        mock_response.results = mock_outputs
+
+        reranker._async_client = MagicMock()
+        reranker._async_client.rerank = AsyncMock(return_value=mock_response)
+        reranker._client = MagicMock()
+
+        result = await reranker.run_async(query="What is the capital of France?", documents=documents, top_k=2)
+
+        assert len(result["documents"]) == 2
+        assert all(isinstance(x, Document) for x in result["documents"])
+        assert result["documents"][0].score == 0.95
+        assert result["documents"][1].score == 0.85
+
+        reranker._async_client.rerank.assert_called_once()
+        call_kwargs = reranker._async_client.rerank.call_args[1]
+        assert call_kwargs["query"] == "What is the capital of France?"
+        assert call_kwargs["top_k"] == 2
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_exceeding_document_count(self):
+        """Test run_async truncates documents exceeding MAX_NUM_DOCS."""
+        reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
+
+        documents = [Document(content=f"Content {i}") for i in range(1100)]
+
+        mock_outputs = [MagicMock(index=i, relevance_score=0.95 - (i * 0.01)) for i in range(10)]
+
+        mock_response = MagicMock()
+        mock_response.results = mock_outputs
+
+        reranker._async_client = MagicMock()
+        reranker._async_client.rerank = AsyncMock(return_value=mock_response)
+        reranker._client = MagicMock()
+
+        result = await reranker.run_async(query="test query", documents=documents, top_k=10)
+
+        reranker._async_client.rerank.assert_called_once()
+        call_kwargs = reranker._async_client.rerank.call_args[1]
+        assert len(call_kwargs["documents"]) == 1000
+        assert len(result["documents"]) == 10
+
+    @pytest.mark.unit
+    @pytest.mark.asyncio
+    async def test_run_async_with_negative_top_k(self):
+        """Test run_async raises ValueError for negative top_k."""
+        reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
+
+        documents = [Document(content="Paris is in France")]
+
+        with pytest.raises(ValueError, match="top_k must be > 0"):
+            await reranker.run_async(query="test query", documents=documents, top_k=-1)
+
+    @pytest.mark.unit
+    def test_prepare_input_docs_with_metadata(self):
+        """Test _prepare_input_docs concatenates metadata fields correctly."""
+        reranker = VoyageRanker(
+            model="rerank-2",
+            api_key=Secret.from_token("fake-api-key"),
+            meta_fields_to_embed=["title", "author"],
+            meta_data_separator=" | ",
+        )
+
+        documents = [
+            Document(content="Content about Paris", meta={"title": "Paris Guide", "author": "Alice"}),
+            Document(content="Content about Berlin", meta={"title": "Berlin Guide", "author": "Bob"}),
+        ]
+
+        result = reranker._prepare_input_docs(documents)
+
+        assert result == [
+            "Paris Guide | Alice | Content about Paris",
+            "Berlin Guide | Bob | Content about Berlin",
+        ]
+
+    @pytest.mark.unit
+    def test_prepare_input_docs_with_empty_fields(self):
+        """Test _prepare_input_docs handles missing metadata fields gracefully."""
+        reranker = VoyageRanker(
+            model="rerank-2",
+            api_key=Secret.from_token("fake-api-key"),
+            meta_fields_to_embed=["title"],
+        )
+
+        documents = [
+            Document(content="Content only"),  # No meta at all
+            Document(content="Content with meta", meta={"title": ""}),  # Empty title
+        ]
+
+        result = reranker._prepare_input_docs(documents)
+
+        # Missing keys and empty values are skipped
+        assert result[0] == "Content only"
+        assert result[1] == "Content with meta"  # Empty title is falsy and skipped
 
     @pytest.mark.unit
     @pytest.mark.asyncio
