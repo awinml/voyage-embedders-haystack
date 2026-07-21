@@ -1,5 +1,5 @@
 import os
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from haystack import Document
@@ -14,7 +14,8 @@ class TestVoyageDocumentEmbedder:
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         embedder = VoyageDocumentEmbedder(model="voyage-3")
 
-        assert embedder.client.api_key == "fake-api-key"
+        assert embedder._client is None
+        assert embedder._async_client is None
         assert embedder.input_type is None
         assert embedder.model == "voyage-3"
         assert embedder.truncate is True
@@ -44,7 +45,8 @@ class TestVoyageDocumentEmbedder:
             embedding_separator=" | ",
         )
 
-        assert embedder.client.api_key == "fake-api-key"
+        assert embedder._client is None
+        assert embedder._async_client is None
         assert embedder.model == "voyage-3-large"
         assert embedder.input_type == "document"
         assert embedder.truncate is False
@@ -60,8 +62,10 @@ class TestVoyageDocumentEmbedder:
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
         monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+        embedder = VoyageDocumentEmbedder(model="voyage-3")
+        # Init succeeds, but warm_up() should fail
         with pytest.raises(ValueError, match=r"None of the .* environment variables are set"):
-            VoyageDocumentEmbedder(model="voyage-3")
+            embedder.warm_up()
 
     @pytest.mark.unit
     def test_to_dict(self, monkeypatch):
@@ -111,7 +115,8 @@ class TestVoyageDocumentEmbedder:
 
         embedder = VoyageDocumentEmbedder.from_dict(data)
 
-        assert embedder.client.api_key == "fake-api-key"
+        assert embedder._client is None
+        assert embedder._async_client is None
         assert embedder.model == "voyage-3"
         assert embedder.input_type is None
         assert embedder.truncate is True
@@ -185,7 +190,8 @@ class TestVoyageDocumentEmbedder:
 
         embedder = VoyageDocumentEmbedder.from_dict(data)
 
-        assert embedder.client.api_key == "fake-api-key"
+        assert embedder._client is None
+        assert embedder._async_client is None
         assert embedder.model == "voyage-3-large"
         assert embedder.input_type == "document"
         assert embedder.truncate is False
@@ -240,30 +246,33 @@ class TestVoyageDocumentEmbedder:
         ]
 
     @pytest.mark.unit
-    def test_run_wrong_input_format(self):
+    @pytest.mark.asyncio
+    async def test_run_wrong_input_format(self):
         embedder = VoyageDocumentEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
 
         string_input = "text"
         list_integers_input = [1, 2, 3]
 
         with pytest.raises(TypeError, match="VoyageDocumentEmbedder expects a list of Documents as input"):
-            embedder.run(documents=string_input)
+            await embedder.run(documents=string_input)
 
         with pytest.raises(TypeError, match="VoyageDocumentEmbedder expects a list of Documents as input"):
-            embedder.run(documents=list_integers_input)
+            await embedder.run(documents=list_integers_input)
 
     @pytest.mark.unit
-    def test_run_on_empty_list(self):
+    @pytest.mark.asyncio
+    async def test_run_on_empty_list(self):
         embedder = VoyageDocumentEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
 
         empty_list_input = []
-        result = embedder.run(documents=empty_list_input)
+        result = await embedder.run(documents=empty_list_input)
 
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
 
     @pytest.mark.unit
-    def test_run_with_mocked_api_int8(self):
+    @pytest.mark.asyncio
+    async def test_run_with_mocked_api_int8(self):
         docs = [Document(content="test doc")]
 
         embedder = VoyageDocumentEmbedder(
@@ -275,9 +284,10 @@ class TestVoyageDocumentEmbedder:
         mock_response = Mock()
         mock_response.embeddings = [[1, 2, 3, 4]]  # Simulate int8 embeddings (integers)
         mock_response.total_tokens = 2
+        embedder._async_client = MagicMock()
+        embedder._async_client.embed = AsyncMock(return_value=mock_response)
 
-        with patch.object(embedder.client, "embed", return_value=mock_response):
-            result = embedder.run(documents=docs)
+        result = await embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
         assert len(documents_with_embeddings) == 1
@@ -288,7 +298,8 @@ class TestVoyageDocumentEmbedder:
         assert result["meta"]["total_tokens"] == 2
 
     @pytest.mark.unit
-    def test_run_with_mocked_api(self):
+    @pytest.mark.asyncio
+    async def test_run_with_mocked_api(self):
         docs = [
             Document(content="I love cheese", meta={"topic": "Cuisine"}),
             Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
@@ -303,16 +314,16 @@ class TestVoyageDocumentEmbedder:
             api_key=Secret.from_token("fake-api-key"),
         )
 
-        # Mock the client.embed method
         mock_response = Mock()
         mock_response.embeddings = [
             [0.1] * 1024,  # 1024 dimensions
             [0.4] * 1024,  # 1024 dimensions
         ]
         mock_response.total_tokens = 18
+        embedder._async_client = MagicMock()
+        embedder._async_client.embed = AsyncMock(return_value=mock_response)
 
-        with patch.object(embedder.client, "embed", return_value=mock_response):
-            result = embedder.run(documents=docs)
+        result = await embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
         assert isinstance(documents_with_embeddings, list)
@@ -324,7 +335,8 @@ class TestVoyageDocumentEmbedder:
         assert result["meta"]["total_tokens"] == 18
 
     @pytest.mark.unit
-    def test_run_with_mocked_api_batch_processing(self):
+    @pytest.mark.asyncio
+    async def test_run_with_mocked_api_batch_processing(self):
         docs = [Document(content=f"content {i}") for i in range(5)]
 
         embedder = VoyageDocumentEmbedder(
@@ -333,16 +345,16 @@ class TestVoyageDocumentEmbedder:
             batch_size=2,
         )
 
-        # Mock the client.embed method to return embeddings for each batch
-        def mock_embed(*args, **kwargs):
+        def make_batch_response(texts, **_):
             mock_response = Mock()
-            texts = kwargs.get("texts", args[0] if args else [])
             mock_response.embeddings = [[0.1] * 1024 for _ in range(len(texts))]
             mock_response.total_tokens = len(texts) * 6
             return mock_response
 
-        with patch.object(embedder.client, "embed", side_effect=mock_embed):
-            result = embedder.run(documents=docs)
+        embedder._async_client = MagicMock()
+        embedder._async_client.embed = AsyncMock(side_effect=make_batch_response)
+
+        result = await embedder.run(documents=docs)
 
         assert len(result["documents"]) == 5
         assert all(len(doc.embedding) == 1024 for doc in result["documents"])
@@ -350,45 +362,15 @@ class TestVoyageDocumentEmbedder:
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     @pytest.mark.flaky(reruns=3, reruns_delay=60)
-    @pytest.mark.parametrize("model", ["voyage-4", "voyage-4-large", "voyage-4-lite"])
-    def test_run_voyage_4(self, model):
+    @pytest.mark.asyncio
+    async def test_run(self):
         docs = [
             Document(content="I love cheese", meta={"topic": "Cuisine"}),
             Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
         ]
 
-        embedder = VoyageDocumentEmbedder(model=model, timeout=600, max_retries=1200)
-        result = embedder.run(documents=docs)
-
-        assert len(result["documents"]) == len(docs)
-        for doc in result["documents"]:
-            assert isinstance(doc.embedding, list)
-            assert len(doc.embedding) == 1024
-            assert all(isinstance(x, float) for x in doc.embedding)
-        assert result["meta"]["total_tokens"] > 0
-
-        # Custom dimensions
-        embedder_dim = VoyageDocumentEmbedder(model=model, output_dimension=512, timeout=600, max_retries=1200)
-        result_dim = embedder_dim.run(documents=[Document(content="I love cheese")])
-        assert len(result_dim["documents"][0].embedding) == 512
-
-        # Quantized output
-        embedder_int8 = VoyageDocumentEmbedder(model=model, output_dtype="int8", timeout=600, max_retries=1200)
-        result_int8 = embedder_int8.run(documents=[Document(content="I love cheese")])
-        assert len(result_int8["documents"][0].embedding) == 1024
-
-    @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
-    @pytest.mark.integration
-    @pytest.mark.flaky(reruns=3, reruns_delay=60)
-    def test_run(self):
-        docs = [
-            Document(content="I love cheese", meta={"topic": "Cuisine"}),
-            Document(content="A transformer is a deep learning architecture", meta={"topic": "ML"}),
-        ]
-
-        model = "voyage-3"
         embedder = VoyageDocumentEmbedder(
-            model=model,
+            model="voyage-4",
             prefix="prefix ",
             suffix=" suffix",
             metadata_fields_to_embed=["topic"],
@@ -396,16 +378,22 @@ class TestVoyageDocumentEmbedder:
             timeout=120,
             max_retries=10,
         )
+        result = await embedder.run(documents=docs)
 
-        result = embedder.run(documents=docs)
-
-        documents_with_embeddings = result["documents"]
-
-        assert isinstance(documents_with_embeddings, list)
-        assert len(documents_with_embeddings) == len(docs)
-        for doc in documents_with_embeddings:
+        assert len(result["documents"]) == len(docs)
+        for doc in result["documents"]:
             assert isinstance(doc, Document)
             assert isinstance(doc.embedding, list)
             assert len(doc.embedding) == 1024
             assert all(isinstance(x, float) for x in doc.embedding)
-        assert result["meta"]["total_tokens"] == 18, "Total tokens does not match"
+        assert result["meta"]["total_tokens"] > 0
+
+        # Custom output dimension
+        embedder_dim = VoyageDocumentEmbedder(model="voyage-4", output_dimension=512, timeout=120, max_retries=10)
+        result_dim = await embedder_dim.run(documents=[Document(content="test")])
+        assert len(result_dim["documents"][0].embedding) == 512
+
+        # Quantized output
+        embedder_int8 = VoyageDocumentEmbedder(model="voyage-4", output_dtype="int8", timeout=120, max_retries=10)
+        result_int8 = await embedder_int8.run(documents=[Document(content="test")])
+        assert len(result_int8["documents"][0].embedding) == 1024

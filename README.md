@@ -17,11 +17,12 @@ Custom components for [Haystack](https://github.com/deepset-ai/haystack) for cre
 
 Voyage’s embedding models are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
-#### What's New (v1.10.0)
+#### What's New (v2.0.0)
 
-- Support for Voyage 4 model family (`voyage-4`, `voyage-4-large`, `voyage-4-lite`).
-- Voyage 4 models support flexible output dimensions (256, 512, 1024, 2048) and multiple output data types (`float`, `int8`, `uint8`, `binary`, `ubinary`).
-- Updated examples to use `voyage-4` as the default model.
+- **Haystack 3.x compatibility**: All components now work with `haystack-ai>=3.0.0`.
+- **Lazy initialization**: Components now use `warm_up()` for lazy client creation. The `client` property auto-initializes on first access.
+- **Async support**: All components now have `async def run()` methods for Haystack 3.x async pipelines.
+- **Document immutability**: Document embedders now use `dataclasses.replace()` to return new Document instances instead of mutating them in-place.
 
 See the full [Changelog](CHANGELOG.md) for all releases.
 
@@ -40,8 +41,8 @@ pip install voyage-embedders-haystack
 
 You can use Voyage Embedding models with multiple components:
 
-- **[VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_text_embedder.py)**: For generating embeddings for queries.
-- **[VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/voyage_embedders/voyage_document_embedder.py)**: For creating semantic embeddings for documents in your indexing pipeline.
+- **[VoyageTextEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_text_embedder.py)**: For generating embeddings for queries.
+- **[VoyageDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_document_embedder.py)**: For creating semantic embeddings for documents in your indexing pipeline.
 - **[VoyageContextualizedDocumentEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_contextualized_document_embedder.py)**: For creating contextualized embeddings where document chunks are embedded together to preserve context and improve retrieval accuracy.
 - **[VoyageMultimodalEmbedder](https://github.com/awinml/voyage-embedders-haystack/blob/main/src/haystack_integrations/components/embedders/voyage_embedders/voyage_multimodal_embedder.py)**: For creating multimodal embeddings that can encode text, images, and videos into a shared vector space.
 

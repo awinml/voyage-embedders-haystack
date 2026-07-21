@@ -1,12 +1,13 @@
 import os
 from collections import defaultdict
 from collections.abc import Callable
+from dataclasses import replace as dataclass_replace
 from typing import Any, cast
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_callable, deserialize_secrets_inplace, serialize_callable
 from tqdm import tqdm
-from voyageai import Client
+from voyageai import AsyncClient, Client
 
 
 @component
@@ -32,7 +33,7 @@ class VoyageContextualizedDocumentEmbedder:
         Document(content="Classical computers use binary bits.", meta={"source_id": "doc2"}),
     ]
 
-    embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-3")
+    embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-4")
     result = embedder.run(docs)
     print(result['documents'][0].embedding)
     ```
@@ -41,7 +42,7 @@ class VoyageContextualizedDocumentEmbedder:
     def __init__(
         self,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
-        model: str = "voyage-context-3",
+        model: str = "voyage-context-4",
         input_type: str | None = None,
         prefix: str = "",
         suffix: str = "",
@@ -63,7 +64,7 @@ class VoyageContextualizedDocumentEmbedder:
             The VoyageAI API key. It can be explicitly provided or automatically read from the environment variable
             VOYAGE_API_KEY (recommended).
         :param model:
-            The name of the model to use. Defaults to "voyage-context-3".
+            The name of the model to use. Defaults to "voyage-context-4".
             For more details, see [Voyage Contextualized Embeddings](https://docs.voyageai.com/docs/contextualized-chunk-embeddings).
         :param input_type:
             Type of the input text. Can be "query", "document", or None.
@@ -75,8 +76,8 @@ class VoyageContextualizedDocumentEmbedder:
         :param suffix:
             A string to add to the end of each text.
         :param output_dimension:
-            The dimension of the output embedding. Defaults to None (1024 for voyage-context-3).
-            voyage-context-3 supports: 2048, 1024 (default), 512, and 256.
+            The dimension of the output embedding. Defaults to None (1024 for voyage-context-4).
+            voyage-context-4 supports: 2048, 1024 (default), 512, and 256.
         :param output_dtype:
             The data type for the embeddings. Defaults to "float".
             Options: "float", "int8", "uint8", "binary", "ubinary".
@@ -120,7 +121,32 @@ class VoyageContextualizedDocumentEmbedder:
         if max_retries is None:
             max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._client: Client | None = None
+        self._async_client: AsyncClient | None = None
+
+    @property
+    def client(self) -> Client:
+        """Get the synchronous Voyage AI client, initializing it on first access."""
+        if self._client is None:
+            self.warm_up()
+        return self._client
+
+    @property
+    def async_client(self) -> AsyncClient:
+        """Get the asynchronous Voyage AI client, initializing it on first access."""
+        if self._async_client is None:
+            self.warm_up()
+        return self._async_client
+
+    def warm_up(self) -> None:
+        """Initialize the Voyage AI clients if they haven't been initialized yet."""
+        if self._client is not None:
+            return
+        api_key = self.api_key.resolve_value()
+        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -211,7 +237,7 @@ class VoyageContextualizedDocumentEmbedder:
 
         return dict(grouped_docs), source_order
 
-    def _embed_batch(
+    async def _embed_batch(
         self, grouped_texts: list[list[str]], batch_size: int
     ) -> tuple[list[list[int | float]], dict[str, Any]]:
         """
@@ -250,7 +276,7 @@ class VoyageContextualizedDocumentEmbedder:
             if self.chunk_fn is not None:
                 api_params["chunk_fn"] = self.chunk_fn
 
-            response = self.client.contextualized_embed(**api_params)
+            response = await self.async_client.contextualized_embed(**api_params)
 
             # Flatten embeddings from all groups in this batch
             for result in response.results:
@@ -261,7 +287,7 @@ class VoyageContextualizedDocumentEmbedder:
         return all_embeddings, meta
 
     @component.output_types(documents=list[Document], meta=dict[str, Any])
-    def run(self, documents: list[Document]) -> dict[str, Any]:
+    async def run(self, documents: list[Document]) -> dict[str, Any]:
         """
         Embed a list of Documents using contextualized embeddings.
 
@@ -289,21 +315,19 @@ class VoyageContextualizedDocumentEmbedder:
         # Group documents by source_id
         grouped_docs, source_order = self._group_documents_by_source(documents)
 
-        # Prepare texts for each group
+        # Prepare texts for each group and track original positions
         grouped_texts = []
-        doc_mapping = []  # Maps flattened position to original document
-
+        original_indices: list[int] = []
+        doc_positions = {id(d): i for i, d in enumerate(documents)}
         for source_id in source_order:
             docs = grouped_docs[source_id]
-            texts = self._prepare_texts_to_embed(docs)
-            grouped_texts.append(texts)
-            doc_mapping.extend(docs)
+            grouped_texts.append(self._prepare_texts_to_embed(docs))
+            original_indices.extend(doc_positions[id(d)] for d in docs)
 
-        # Get embeddings
-        embeddings, meta = self._embed_batch(grouped_texts, batch_size=self.batch_size)
+        embeddings, meta = await self._embed_batch(grouped_texts, batch_size=self.batch_size)
 
-        # Assign embeddings back to documents
-        for doc, emb in zip(doc_mapping, embeddings, strict=True):
-            doc.embedding = emb
+        enriched = list(documents)
+        for emb, idx in zip(embeddings, original_indices, strict=True):
+            enriched[idx] = dataclass_replace(enriched[idx], embedding=emb)
 
-        return {"documents": documents, "meta": meta}
+        return {"documents": enriched, "meta": meta}

@@ -51,6 +51,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
 
+      - name: Install dependencies
+        run: uv sync --all-extras
+
       - name: Lint
         if: matrix.python-version == '3.10' && runner.os == 'Linux'
         run: make lint-all

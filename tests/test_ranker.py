@@ -1,5 +1,5 @@
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from haystack import Document
@@ -15,7 +15,8 @@ class TestVoyageTextReranker:
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         reranker = VoyageRanker(model="rerank-2")
 
-        assert reranker.client.api_key == "fake-api-key"
+        assert reranker._client is None
+        assert reranker._async_client is None
         assert reranker.model == "rerank-2"
         assert reranker.truncate is None
         assert reranker.prefix == ""
@@ -36,7 +37,8 @@ class TestVoyageTextReranker:
             meta_fields_to_embed=["meta_field_1", "meta_field_2"],
             meta_data_separator=",",
         )
-        assert reranker.client.api_key == "fake-api-key"
+        assert reranker._client is None
+        assert reranker._async_client is None
         assert reranker.model == "model"
         assert reranker.truncate is True
         assert reranker.top_k == 10
@@ -47,21 +49,23 @@ class TestVoyageTextReranker:
 
     @pytest.mark.unit
     def test_init_with_explicit_timeout_and_max_retries(self):
-        with patch("haystack_integrations.components.rankers.voyage.ranker.Client") as mock_client:
-            reranker = VoyageRanker(
-                model="rerank-2",
-                api_key=Secret.from_token("fake-api-key"),
-                timeout=60,
-                max_retries=3,
-            )
-            assert reranker.model == "rerank-2"
-            mock_client.assert_called_once_with(api_key="fake-api-key", max_retries=3, timeout=60)
+        reranker = VoyageRanker(
+            model="rerank-2",
+            api_key=Secret.from_token("fake-api-key"),
+            timeout=60,
+            max_retries=3,
+        )
+        assert reranker._client is None
+        assert reranker._timeout == 60
+        assert reranker._max_retries == 3
 
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
         monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+        embedder = VoyageRanker(model="rerank-2")
+        # Init succeeds, but warm_up() should fail
         with pytest.raises(ValueError, match=r"None of the .* environment variables are set"):
-            VoyageRanker(model="rerank-2")
+            embedder.warm_up()
 
     @pytest.mark.unit
     def test_to_dict(self, monkeypatch):
@@ -100,7 +104,8 @@ class TestVoyageTextReranker:
         }
 
         reranker = VoyageRanker.from_dict(data)
-        assert reranker.client.api_key == "fake-api-key"
+        assert reranker._client is None
+        assert reranker._async_client is None
         assert reranker.top_k == 10
         assert reranker.model == "rerank-2"
         assert reranker.truncate is None
@@ -151,7 +156,8 @@ class TestVoyageTextReranker:
         }
 
         reranker = VoyageRanker.from_dict(data)
-        assert reranker.client.api_key == "fake-api-key"
+        assert reranker._client is None
+        assert reranker._async_client is None
         assert reranker.model == "model"
         assert reranker.truncate is True
         assert reranker.top_k == 10
@@ -161,8 +167,9 @@ class TestVoyageTextReranker:
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     @pytest.mark.flaky(reruns=3, reruns_delay=60)
-    def test_run(self):
-        model = "rerank-2"
+    @pytest.mark.asyncio
+    async def test_run(self):
+        model = "rerank-2.5"
 
         documents = [
             Document(content="Paris is in France"),
@@ -171,13 +178,14 @@ class TestVoyageTextReranker:
         ]
 
         reranker = VoyageRanker(model=model, prefix="prefix ", suffix=" suffix")
-        result = reranker.run(query="The food was delicious", documents=documents, top_k=2)
+        result = await reranker.run(query="The food was delicious", documents=documents, top_k=2)
 
         assert len(result["documents"]) == 2
         assert all(isinstance(x, Document) for x in result["documents"])
 
     @pytest.mark.unit
-    def test_run_wrong_input_format(self):
+    @pytest.mark.asyncio
+    async def test_run_wrong_input_format(self):
         reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
 
         integer_input = 1
@@ -187,11 +195,17 @@ class TestVoyageTextReranker:
             Document(content="Lyon is in France"),
         ]
 
+        # Mock the async client to see the error from voyageai
+        mock_async_client = AsyncMock(spec=["rerank"])
+        mock_async_client.rerank.side_effect = InvalidRequestError("not a valid string")
+        reranker._async_client = mock_async_client
+
         with pytest.raises(InvalidRequestError, match="not a valid string"):
-            reranker.run(query=integer_input, documents=documents)
+            await reranker.run(query=integer_input, documents=documents)
 
     @pytest.mark.unit
-    def test_run_with_negative_top_k(self):
+    @pytest.mark.asyncio
+    async def test_run_with_negative_top_k(self):
         reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
 
         documents = [
@@ -200,10 +214,11 @@ class TestVoyageTextReranker:
         ]
 
         with pytest.raises(ValueError, match="top_k must be > 0"):
-            reranker.run(query="test query", documents=documents, top_k=-1)
+            await reranker.run(query="test query", documents=documents, top_k=-1)
 
     @pytest.mark.unit
-    def test_run_with_zero_top_k(self):
+    @pytest.mark.asyncio
+    async def test_run_with_zero_top_k(self):
         # When top_k is set in __init__ and we pass 0 to run(),
         # the logic `top_k = top_k or self.top_k` will use self.top_k (5)
         # So we need to test with a default top_k that's 0
@@ -215,28 +230,31 @@ class TestVoyageTextReranker:
         ]
 
         with pytest.raises(ValueError, match="top_k must be > 0"):
-            reranker.run(query="test query", documents=documents)
+            await reranker.run(query="test query", documents=documents)
 
     @pytest.mark.unit
-    def test_run_with_exceeding_document_count(self):
+    @pytest.mark.asyncio
+    async def test_run_with_exceeding_document_count(self):
         reranker = VoyageRanker(model="rerank-2", api_key=Secret.from_token("fake-api-key"))
 
         # Create 1100 documents to exceed MAX_NUM_DOCS (1000)
         documents = [Document(content=f"Content {i}") for i in range(1100)]
 
-        # Mock the client.rerank method
+        # Mock the async client's async_rerank method
         mock_outputs = [MagicMock(index=i, relevance_score=0.95 - (i * 0.01)) for i in range(10)]  # Return 10 results
 
         mock_response = MagicMock()
         mock_response.results = mock_outputs
 
-        reranker.client.rerank = MagicMock(return_value=mock_response)
+        mock_async_client = AsyncMock(spec=["rerank"])
+        mock_async_client.rerank = AsyncMock(return_value=mock_response)
+        reranker._async_client = mock_async_client
 
-        result = reranker.run(query="test query", documents=documents, top_k=10)
+        result = await reranker.run(query="test query", documents=documents, top_k=10)
 
-        # Verify that rerank was called with only the first 1000 documents
-        reranker.client.rerank.assert_called_once()
-        call_kwargs = reranker.client.rerank.call_args[1]
+        # Verify that async_rerank was called with only the first 1000 documents
+        reranker._async_client.rerank.assert_called_once()
+        call_kwargs = reranker._async_client.rerank.call_args[1]
         assert len(call_kwargs["documents"]) == 1000
 
         # Verify results are returned correctly

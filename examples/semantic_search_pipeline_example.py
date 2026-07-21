@@ -1,4 +1,14 @@
-# Install HuggingFace Datasets using "pip install datasets"
+"""Example: Semantic search pipeline with Voyage embedders.
+
+This example demonstrates a complete semantic search pipeline using Haystack,
+Voyage Embedders, and the Simple Wikipedia dataset.
+
+This example requires a Voyage AI API key. Set it via the VOYAGE_API_KEY
+environment variable or in a .env file at the project root.
+"""
+
+import asyncio
+
 try:
     from dotenv import load_dotenv
 
@@ -16,61 +26,66 @@ from haystack.document_stores.in_memory import InMemoryDocumentStore
 # Import Voyage Embedders
 from haystack_integrations.components.embedders.voyage_embedders import VoyageDocumentEmbedder, VoyageTextEmbedder
 
-# Load first 10 rows of the Simple Wikipedia Dataset from HuggingFace
-dataset = load_dataset("pszemraj/simple_wikipedia", split="validation[:10]")
 
-docs = [
-    Document(
-        content=doc["text"],
-        meta={
-            "title": doc["title"],
-            "url": doc["url"],
-        },
+async def main():
+    # Load first 10 rows of the Simple Wikipedia Dataset from HuggingFace
+    dataset = load_dataset("pszemraj/simple_wikipedia", split="validation[:10]")
+
+    docs = [
+        Document(
+            content=doc["text"],
+            meta={
+                "title": doc["title"],
+                "url": doc["url"],
+            },
+        )
+        for doc in dataset
+    ]
+
+    doc_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
+    retriever = InMemoryEmbeddingRetriever(document_store=doc_store)
+    doc_writer = DocumentWriter(document_store=doc_store)
+
+    doc_embedder = VoyageDocumentEmbedder(
+        model="voyage-4",
+        input_type="document",
+        timeout=600,
+        max_retries=1200,
     )
-    for doc in dataset
-]
 
-doc_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
-retriever = InMemoryEmbeddingRetriever(document_store=doc_store)
-doc_writer = DocumentWriter(document_store=doc_store)
+    # Indexing Pipeline
+    indexing_pipeline = Pipeline()
+    indexing_pipeline.add_component(instance=doc_embedder, name="DocEmbedder")
+    indexing_pipeline.add_component(instance=doc_writer, name="DocWriter")
+    indexing_pipeline.connect("DocEmbedder", "DocWriter")
 
-doc_embedder = VoyageDocumentEmbedder(
-    model="voyage-3",
-    input_type="document",
-    timeout=600,
-    max_retries=1200,
-)
+    await indexing_pipeline.run_async({"DocEmbedder": {"documents": docs}})
 
-# Indexing Pipeline
-indexing_pipeline = Pipeline()
-indexing_pipeline.add_component(instance=doc_embedder, name="DocEmbedder")
-indexing_pipeline.add_component(instance=doc_writer, name="DocWriter")
-indexing_pipeline.connect("DocEmbedder", "DocWriter")
+    print(f"Number of documents in Document Store: {len(doc_store.filter_documents())}")
+    print(f"First Document: {doc_store.filter_documents()[0]}")
+    print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}")
 
-indexing_pipeline.run({"DocEmbedder": {"documents": docs}})
+    text_embedder = VoyageTextEmbedder(
+        model="voyage-4",
+        input_type="query",
+        timeout=600,
+        max_retries=1200,
+    )
 
-print(f"Number of documents in Document Store: {len(doc_store.filter_documents())}")
-print(f"First Document: {doc_store.filter_documents()[0]}")
-print(f"Embedding of first Document: {doc_store.filter_documents()[0].embedding}")
+    # Query Pipeline
+    query_pipeline = Pipeline()
+    query_pipeline.add_component(instance=text_embedder, name="TextEmbedder")
+    query_pipeline.add_component(instance=retriever, name="Retriever")
+    query_pipeline.connect("TextEmbedder.embedding", "Retriever.query_embedding")
 
-text_embedder = VoyageTextEmbedder(
-    model="voyage-3",
-    input_type="query",
-    timeout=600,
-    max_retries=1200,
-)
+    # Search
+    results = await query_pipeline.run_async({"TextEmbedder": {"text": "Which year did the Joker movie release?"}})
 
-# Query Pipeline
-query_pipeline = Pipeline()
-query_pipeline.add_component(instance=text_embedder, name="TextEmbedder")
-query_pipeline.add_component(instance=retriever, name="Retriever")
-query_pipeline.connect("TextEmbedder.embedding", "Retriever.query_embedding")
+    # Print text from top result
+    top_result = results["Retriever"]["documents"][0].content
+    print("The top search result is:")
+    print(top_result)
 
 
-# Search
-results = query_pipeline.run({"TextEmbedder": {"text": "Which year did the Joker movie release?"}})
-
-# Print text from top result
-top_result = results["Retriever"]["documents"][0].content
-print("The top search result is:")
-print(top_result)
+if __name__ == "__main__":
+    asyncio.run(main())

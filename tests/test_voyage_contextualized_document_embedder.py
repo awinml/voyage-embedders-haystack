@@ -1,11 +1,15 @@
 import os
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from haystack import Document
+from haystack.core.serialization_security import allow_deserialization_module
 from haystack.utils.auth import Secret
 
 from haystack_integrations.components.embedders.voyage_embedders import VoyageContextualizedDocumentEmbedder
+
+# Allow deserialization of callables from the tests module for chunk_fn round-trip tests
+allow_deserialization_module("tests")
 
 
 def _custom_chunk_fn(text: str) -> list[str]:
@@ -18,9 +22,10 @@ class TestVoyageContextualizedDocumentEmbedder:
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         embedder = VoyageContextualizedDocumentEmbedder()
 
-        assert embedder.client.api_key == "fake-api-key"
+        assert embedder._client is None
+        assert embedder._async_client is None
         assert embedder.input_type is None
-        assert embedder.model == "voyage-context-3"
+        assert embedder.model == "voyage-context-4"
         assert embedder.prefix == ""
         assert embedder.suffix == ""
         assert embedder.output_dimension is None
@@ -36,7 +41,7 @@ class TestVoyageContextualizedDocumentEmbedder:
     def test_init_with_parameters(self):
         embedder = VoyageContextualizedDocumentEmbedder(
             api_key=Secret.from_token("fake-api-key"),
-            model="voyage-context-3",
+            model="voyage-context-4",
             input_type="document",
             prefix="prefix",
             suffix="suffix",
@@ -49,8 +54,9 @@ class TestVoyageContextualizedDocumentEmbedder:
             source_id_field="custom_source_field",
         )
 
-        assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "voyage-context-3"
+        assert embedder._client is None
+        assert embedder._async_client is None
+        assert embedder.model == "voyage-context-4"
         assert embedder.input_type == "document"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
@@ -65,8 +71,10 @@ class TestVoyageContextualizedDocumentEmbedder:
     @pytest.mark.unit
     def test_init_fail_wo_api_key(self, monkeypatch):
         monkeypatch.delenv("VOYAGE_API_KEY", raising=False)
+        embedder = VoyageContextualizedDocumentEmbedder()
+        # Init succeeds, but warm_up() should fail
         with pytest.raises(ValueError, match=r"None of the .* environment variables are set"):
-            VoyageContextualizedDocumentEmbedder()
+            embedder.warm_up()
 
     @pytest.mark.unit
     def test_to_dict(self, monkeypatch):
@@ -78,7 +86,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             "voyage_contextualized_document_embedder.VoyageContextualizedDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
-                "model": "voyage-context-3",
+                "model": "voyage-context-4",
                 "input_type": None,
                 "prefix": "",
                 "suffix": "",
@@ -101,7 +109,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             "voyage_contextualized_document_embedder.VoyageContextualizedDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["VOYAGE_API_KEY"], "strict": True, "type": "env_var"},
-                "model": "voyage-context-3",
+                "model": "voyage-context-4",
                 "input_type": None,
                 "prefix": "",
                 "suffix": "",
@@ -118,8 +126,9 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder.from_dict(data)
 
-        assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "voyage-context-3"
+        assert embedder._client is None
+        assert embedder._async_client is None
+        assert embedder.model == "voyage-context-4"
         assert embedder.input_type is None
         assert embedder.prefix == ""
         assert embedder.suffix == ""
@@ -137,7 +146,7 @@ class TestVoyageContextualizedDocumentEmbedder:
         monkeypatch.setenv("ENV_VAR", "fake-api-key")
         component = VoyageContextualizedDocumentEmbedder(
             api_key=Secret.from_env_var("ENV_VAR", strict=False),
-            model="voyage-context-3",
+            model="voyage-context-4",
             input_type="document",
             prefix="prefix",
             suffix="suffix",
@@ -156,7 +165,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             "voyage_contextualized_document_embedder.VoyageContextualizedDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
-                "model": "voyage-context-3",
+                "model": "voyage-context-4",
                 "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
@@ -179,7 +188,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             "voyage_contextualized_document_embedder.VoyageContextualizedDocumentEmbedder",
             "init_parameters": {
                 "api_key": {"env_vars": ["ENV_VAR"], "strict": False, "type": "env_var"},
-                "model": "voyage-context-3",
+                "model": "voyage-context-4",
                 "input_type": "document",
                 "prefix": "prefix",
                 "suffix": "suffix",
@@ -196,8 +205,9 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder.from_dict(data)
 
-        assert embedder.client.api_key == "fake-api-key"
-        assert embedder.model == "voyage-context-3"
+        assert embedder._client is None
+        assert embedder._async_client is None
+        assert embedder.model == "voyage-context-4"
         assert embedder.input_type == "document"
         assert embedder.prefix == "prefix"
         assert embedder.suffix == "suffix"
@@ -304,7 +314,8 @@ class TestVoyageContextualizedDocumentEmbedder:
         assert len(grouped_docs["doc2"]) == 1
 
     @pytest.mark.unit
-    def test_run_wrong_input_format(self):
+    @pytest.mark.asyncio
+    async def test_run_wrong_input_format(self):
         embedder = VoyageContextualizedDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
 
         string_input = "text"
@@ -313,19 +324,20 @@ class TestVoyageContextualizedDocumentEmbedder:
         with pytest.raises(
             TypeError, match="VoyageContextualizedDocumentEmbedder expects a list of Documents as input"
         ):
-            embedder.run(documents=string_input)
+            await embedder.run(documents=string_input)
 
         with pytest.raises(
             TypeError, match="VoyageContextualizedDocumentEmbedder expects a list of Documents as input"
         ):
-            embedder.run(documents=list_integers_input)
+            await embedder.run(documents=list_integers_input)
 
     @pytest.mark.unit
-    def test_run_on_empty_list(self):
+    @pytest.mark.asyncio
+    async def test_run_on_empty_list(self):
         embedder = VoyageContextualizedDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
 
         empty_list_input = []
-        result = embedder.run(documents=empty_list_input)
+        result = await embedder.run(documents=empty_list_input)
 
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
@@ -338,11 +350,13 @@ class TestVoyageContextualizedDocumentEmbedder:
         monkeypatch.setenv("VOYAGE_MAX_RETRIES", "10")
 
         embedder = VoyageContextualizedDocumentEmbedder()
+        embedder.warm_up()
 
-        assert embedder.client.api_key == "fake-api-key"
+        assert embedder._client is not None
 
     @pytest.mark.unit
-    def test_run_with_mocked_client(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_run_with_mocked_client(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
 
         docs = [
@@ -352,18 +366,19 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder()
 
-        # Mock the client's contextualized_embed method
+        # Mock the async client's async_contextualized_embed method
         mock_result = MagicMock()
         mock_result.embeddings = [[0.1, 0.2], [0.3, 0.4]]
-        mock_result.total_tokens = 10
 
         mock_response = MagicMock()
         mock_response.results = [mock_result]
         mock_response.total_tokens = 10
 
-        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()  # For the sync client property
 
-        result = embedder.run(documents=docs)
+        result = await embedder.run(documents=docs)
 
         assert len(result["documents"]) == 2
         assert result["documents"][0].embedding == [0.1, 0.2]
@@ -371,7 +386,8 @@ class TestVoyageContextualizedDocumentEmbedder:
         assert result["meta"]["total_tokens"] == 10
 
     @pytest.mark.unit
-    def test_run_with_all_parameters_mocked(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_run_with_all_parameters_mocked(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
 
         docs = [
@@ -385,32 +401,35 @@ class TestVoyageContextualizedDocumentEmbedder:
             chunk_fn=lambda x: [x],
         )
 
-        # Mock the client
+        # Mock the async client
         mock_result = MagicMock()
         mock_result.embeddings = [[0.1, 0.2]]
         mock_response = MagicMock()
         mock_response.results = [mock_result]
         mock_response.total_tokens = 5
 
-        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
 
-        embedder.run(documents=docs)
+        await embedder.run(documents=docs)
 
         # Verify the method was called with all parameters
-        embedder.client.contextualized_embed.assert_called_once()
-        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        embedder._async_client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder._async_client.contextualized_embed.call_args[1]
         assert call_kwargs["input_type"] == "document"
         assert call_kwargs["output_dtype"] == "int8"
         assert call_kwargs["output_dimension"] == 512
         assert call_kwargs["chunk_fn"] is not None
 
     @pytest.mark.unit
-    def test_embed_batch_with_multiple_groups(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_embed_batch_with_multiple_groups(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
 
         embedder = VoyageContextualizedDocumentEmbedder(batch_size=1, progress_bar=False)
 
-        # Mock the client to return different embeddings for each batch
+        # Mock the async client to return different embeddings for each batch
         mock_result1 = MagicMock()
         mock_result1.embeddings = [[0.1, 0.2]]
         mock_response1 = MagicMock()
@@ -423,75 +442,86 @@ class TestVoyageContextualizedDocumentEmbedder:
         mock_response2.results = [mock_result2]
         mock_response2.total_tokens = 6
 
-        embedder.client.contextualized_embed = MagicMock(side_effect=[mock_response1, mock_response2])
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(side_effect=[mock_response1, mock_response2])
+        embedder._client = MagicMock()
 
         grouped_texts = [["text1"], ["text2"]]
-        embeddings, meta = embedder._embed_batch(grouped_texts, batch_size=1)
+        embeddings, meta = await embedder._embed_batch(grouped_texts, batch_size=1)
 
         assert len(embeddings) == 2
         assert embeddings[0] == [0.1, 0.2]
         assert embeddings[1] == [0.3, 0.4]
         assert meta["total_tokens"] == 11
-        assert embedder.client.contextualized_embed.call_count == 2
+        assert embedder._async_client.contextualized_embed.call_count == 2
 
     @pytest.mark.unit
     def test_init_with_explicit_timeout_and_retries(self):
         embedder = VoyageContextualizedDocumentEmbedder(
             api_key=Secret.from_token("fake-api-key"), timeout=100, max_retries=20
         )
-        # This should use the explicit values, not environment variables
-        assert embedder.client is not None
+        assert embedder._client is None
+        assert embedder._async_client is None
+        assert embedder._timeout == 100
+        assert embedder._max_retries == 20
 
     @pytest.mark.unit
-    def test_embed_batch_without_optional_params(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_embed_batch_without_optional_params(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
 
         embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False)
 
-        # Mock the client
+        # Mock the async client
         mock_result = MagicMock()
         mock_result.embeddings = [[0.1, 0.2]]
         mock_response = MagicMock()
         mock_response.results = [mock_result]
         mock_response.total_tokens = 5
 
-        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
 
         grouped_texts = [["text1"]]
-        _embeddings, _meta = embedder._embed_batch(grouped_texts, batch_size=32)
+        _embeddings, _meta = await embedder._embed_batch(grouped_texts, batch_size=32)
 
         # Verify the method was called without optional parameters
-        embedder.client.contextualized_embed.assert_called_once()
-        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        embedder._async_client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder._async_client.contextualized_embed.call_args[1]
         assert "input_type" not in call_kwargs
         assert "chunk_fn" not in call_kwargs
 
     @pytest.mark.unit
-    def test_embed_batch_with_output_dimension_only(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_embed_batch_with_output_dimension_only(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
 
         embedder = VoyageContextualizedDocumentEmbedder(progress_bar=False, output_dimension=512)
 
-        # Mock the client
+        # Mock the async client
         mock_result = MagicMock()
         mock_result.embeddings = [[0.1, 0.2]]
         mock_response = MagicMock()
         mock_response.results = [mock_result]
         mock_response.total_tokens = 5
 
-        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
 
         grouped_texts = [["text1"]]
-        _embeddings, _meta = embedder._embed_batch(grouped_texts, batch_size=32)
+        _embeddings, _meta = await embedder._embed_batch(grouped_texts, batch_size=32)
 
         # Verify output_dimension is passed but output_dtype is not
-        embedder.client.contextualized_embed.assert_called_once()
-        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        embedder._async_client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder._async_client.contextualized_embed.call_args[1]
         assert call_kwargs["output_dimension"] == 512
         assert call_kwargs["output_dtype"] == "float"  # default value
 
     @pytest.mark.unit
-    def test_embed_batch_with_none_output_dtype(self, monkeypatch):
+    @pytest.mark.asyncio
+    async def test_embed_batch_with_none_output_dtype(self, monkeypatch):
         """Test the edge case where output_dtype is explicitly set to None."""
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
 
@@ -499,27 +529,31 @@ class TestVoyageContextualizedDocumentEmbedder:
         # Explicitly set output_dtype to None to cover the branch where it's not added to api_params
         embedder.output_dtype = None
 
-        # Mock the client
+        # Mock the async client
         mock_result = MagicMock()
         mock_result.embeddings = [[0.1, 0.2]]
         mock_response = MagicMock()
         mock_response.results = [mock_result]
         mock_response.total_tokens = 5
 
-        embedder.client.contextualized_embed = MagicMock(return_value=mock_response)
+        embedder._async_client = MagicMock()
+        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
 
         grouped_texts = [["text1"]]
-        _embeddings, _meta = embedder._embed_batch(grouped_texts, batch_size=32)
+        _embeddings, _meta = await embedder._embed_batch(grouped_texts, batch_size=32)
 
         # Verify output_dtype is NOT in the call kwargs when it's None
-        embedder.client.contextualized_embed.assert_called_once()
-        call_kwargs = embedder.client.contextualized_embed.call_args[1]
+        embedder._async_client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder._async_client.contextualized_embed.call_args[1]
         assert "output_dtype" not in call_kwargs
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     @pytest.mark.flaky(reruns=3, reruns_delay=60)
-    def test_run(self):
+    @pytest.mark.timeout(60)
+    @pytest.mark.asyncio
+    async def test_run(self):
         docs = [
             Document(content="Introduction to quantum computing.", meta={"source_id": "doc1", "topic": "Quantum"}),
             Document(
@@ -531,7 +565,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             ),
         ]
 
-        model = "voyage-context-3"
+        model = "voyage-context-4"
         embedder = VoyageContextualizedDocumentEmbedder(
             model=model,
             prefix="prefix ",
@@ -542,7 +576,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             max_retries=10,
         )
 
-        result = embedder.run(documents=docs)
+        result = await embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
 
@@ -551,25 +585,37 @@ class TestVoyageContextualizedDocumentEmbedder:
         for doc in documents_with_embeddings:
             assert isinstance(doc, Document)
             assert isinstance(doc.embedding, list)
-            assert len(doc.embedding) == 1024  # Default dimension for voyage-context-3
+            assert len(doc.embedding) == 1024  # Default dimension for voyage-context-4
             assert all(isinstance(x, float) for x in doc.embedding)
 
         # Verify that the embeddings are different (contextualized)
         assert documents_with_embeddings[0].embedding != documents_with_embeddings[2].embedding
 
+        # Custom output dimension
+        embedder_dim = VoyageContextualizedDocumentEmbedder(
+            model="voyage-context-4",
+            output_dimension=512,
+            timeout=120,
+            max_retries=10,
+        )
+        result_dim = await embedder_dim.run(documents=[Document(content="test", meta={"source_id": "doc1"})])
+        assert len(result_dim["documents"][0].embedding) == 512
+
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
     @pytest.mark.integration
     @pytest.mark.flaky(reruns=3, reruns_delay=60)
-    def test_run_with_single_source(self):
+    @pytest.mark.timeout(60)
+    @pytest.mark.asyncio
+    async def test_run_with_single_source(self):
         docs = [
             Document(content="First chunk of content.", meta={"source_id": "single_doc"}),
             Document(content="Second chunk of content.", meta={"source_id": "single_doc"}),
             Document(content="Third chunk of content.", meta={"source_id": "single_doc"}),
         ]
 
-        embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-3")
+        embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-4")
 
-        result = embedder.run(documents=docs)
+        result = await embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
 

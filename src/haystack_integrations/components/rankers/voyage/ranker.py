@@ -1,9 +1,10 @@
 import os
+from dataclasses import replace as dataclass_replace
 from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict, logging
 from haystack.utils import Secret, deserialize_secrets_inplace
-from voyageai import Client
+from voyageai import AsyncClient, Client
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class VoyageRanker:
     from haystack import Document
     from haystack_integrations.components.rankers.voyage.ranker import VoyageRanker
 
-    ranker = VoyageRanker(model="rerank-2", top_k=2)
+    ranker = VoyageRanker(model="rerank-2.5", top_k=2)
 
     docs = [Document(content="Paris"), Document(content="Berlin")]
     query = "What is the capital of germany?"
@@ -88,7 +89,32 @@ class VoyageRanker:
         if max_retries is None:
             max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._client: Client | None = None
+        self._async_client: AsyncClient | None = None
+
+    @property
+    def client(self) -> Client:
+        """Get the synchronous Voyage AI client, initializing it on first access."""
+        if self._client is None:
+            self.warm_up()
+        return self._client
+
+    @property
+    def async_client(self) -> AsyncClient:
+        """Get the asynchronous Voyage AI client, initializing it on first access."""
+        if self._async_client is None:
+            self.warm_up()
+        return self._async_client
+
+    def warm_up(self) -> None:
+        """Initialize the Voyage AI clients if they haven't been initialized yet."""
+        if self._client is not None:
+            return
+        api_key = self.api_key.resolve_value()
+        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -142,7 +168,7 @@ class VoyageRanker:
         return concatenated_input_list
 
     @component.output_types(documents=list[Document])
-    def run(self, query: str, documents: list[Document], top_k: int | None = None) -> dict[str, list[Document]]:
+    async def run(self, query: str, documents: list[Document], top_k: int | None = None) -> dict[str, list[Document]]:
         """
         Use the Voyage AI Reranker to re-rank the list of documents based on the query.
 
@@ -166,13 +192,13 @@ class VoyageRanker:
         input_docs = self._prepare_input_docs(documents)
         if len(input_docs) > MAX_NUM_DOCS:
             logger.warning(
-                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents.\
-                The number of documents has been truncated to {MAX_NUM_DOCS} \
+                f"The Voyage AI reranking endpoint only supports {MAX_NUM_DOCS} documents.\\\
+                The number of documents has been truncated to {MAX_NUM_DOCS} \\\
                 from {len(input_docs)}."
             )
             input_docs = input_docs[:MAX_NUM_DOCS]
 
-        response = self.client.rerank(
+        response = await self.async_client.rerank(
             model=self.model,
             query=query,
             documents=input_docs,
@@ -182,7 +208,5 @@ class VoyageRanker:
         scores = [output.relevance_score for output in response.results]
         sorted_docs = []
         for idx, score in zip(indices, scores, strict=True):
-            doc = documents[idx]
-            doc.score = score
-            sorted_docs.append(documents[idx])
+            sorted_docs.append(dataclass_replace(documents[idx], score=score))
         return {"documents": sorted_docs}

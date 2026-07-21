@@ -1,3 +1,11 @@
+"""Example: Document embedding with VoyageDocumentEmbedder.
+
+This example requires a Voyage AI API key. Set it via the VOYAGE_API_KEY
+environment variable or in a .env file at the project root.
+"""
+
+import asyncio
+
 try:
     from dotenv import load_dotenv
 
@@ -40,14 +48,20 @@ document_list = [
     ),
 ]
 
-doc_embedder = VoyageDocumentEmbedder(
-    model="voyage-4",
-    timeout=600,
-    max_retries=1200,
-)
 
-result = doc_embedder.run(document_list)
+async def main():
+    doc_embedder = VoyageDocumentEmbedder(
+        model="voyage-4",
+        timeout=600,
+        max_retries=1200,
+    )
 
-print(f"Document Text: {result['documents'][0].content}")
-print(f"Document Embedding: {result['documents'][0].embedding}")
-print(f"Embedding Dimension: {len(result['documents'][0].embedding)}")
+    result = await doc_embedder.run(document_list)
+
+    print(f"Document Text: {result['documents'][0].content}")
+    print(f"Document Embedding: {result['documents'][0].embedding}")
+    print(f"Embedding Dimension: {len(result['documents'][0].embedding)}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

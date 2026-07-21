@@ -6,7 +6,7 @@ from haystack import component, default_from_dict, default_to_dict, logging
 from haystack.dataclasses import ByteStream
 from haystack.utils import Secret, deserialize_secrets_inplace
 from tqdm import tqdm
-from voyageai import Client
+from voyageai import AsyncClient, Client
 
 try:
     from PIL import Image
@@ -133,7 +133,32 @@ class VoyageMultimodalEmbedder:
         if max_retries is None:
             max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._client: Client | None = None
+        self._async_client: AsyncClient | None = None
+
+    @property
+    def client(self) -> Client:
+        """Get the synchronous Voyage AI client, initializing it on first access."""
+        if self._client is None:
+            self.warm_up()
+        return self._client
+
+    @property
+    def async_client(self) -> AsyncClient:
+        """Get the asynchronous Voyage AI client, initializing it on first access."""
+        if self._async_client is None:
+            self.warm_up()
+        return self._async_client
+
+    def warm_up(self) -> None:
+        """Initialize the Voyage AI clients if they haven't been initialized yet."""
+        if self._client is not None:
+            return
+        api_key = self.api_key.resolve_value()
+        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -205,7 +230,7 @@ class VoyageMultimodalEmbedder:
             prepared.append(prepared_items)
         return prepared
 
-    def _embed_batch(
+    async def _embed_batch(
         self, inputs: list[list[Union[str, "Image.Image", "Video"]]], batch_size: int
     ) -> tuple[list[list[float]], dict[str, Any]]:
         """
@@ -247,7 +272,7 @@ class VoyageMultimodalEmbedder:
             if self.output_dtype is not None:
                 api_params["output_dtype"] = self.output_dtype
 
-            response = self.client.multimodal_embed(**api_params)
+            response = await self.async_client.multimodal_embed(**api_params)
 
             all_embeddings.extend(response.embeddings)
             meta["text_tokens"] += response.text_tokens
@@ -258,7 +283,7 @@ class VoyageMultimodalEmbedder:
         return all_embeddings, meta
 
     @component.output_types(embeddings=list[list[float]], meta=dict[str, Any])
-    def run(
+    async def run(
         self,
         inputs: list[list[MultimodalContent]],
     ) -> dict[str, Any]:
@@ -309,6 +334,6 @@ class VoyageMultimodalEmbedder:
         prepared_inputs = self._prepare_inputs(inputs)
 
         # Embed in batches
-        embeddings, meta = self._embed_batch(prepared_inputs, self.batch_size)
+        embeddings, meta = await self._embed_batch(prepared_inputs, self.batch_size)
 
         return {"embeddings": embeddings, "meta": meta}

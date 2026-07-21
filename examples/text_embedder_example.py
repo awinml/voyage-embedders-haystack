@@ -1,3 +1,11 @@
+"""Example: Text embedding with VoyageTextEmbedder.
+
+This example requires a Voyage AI API key. Set it via the VOYAGE_API_KEY
+environment variable or in a .env file at the project root.
+"""
+
+import asyncio
+
 try:
     from dotenv import load_dotenv
 
@@ -14,13 +22,19 @@ text = (
 )
 instruction = "Represent the Amazon comment for classifying the sentence as positive or negative"
 
-text_embedder = VoyageTextEmbedder(
-    model="voyage-4",
-    input_type="query",
-    timeout=600,
-    max_retries=1200,
-)
 
-result = text_embedder.run(text)
-print(f"Embedding: {result['embedding']}")
-print(f"Embedding Dimension: {len(result['embedding'])}")
+async def main():
+    text_embedder = VoyageTextEmbedder(
+        model="voyage-4",
+        input_type="query",
+        timeout=600,
+        max_retries=1200,
+    )
+
+    result = await text_embedder.run(text)
+    print(f"Embedding: {result['embedding']}")
+    print(f"Embedding Dimension: {len(result['embedding'])}")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

@@ -1,10 +1,11 @@
 import os
+from dataclasses import replace as dataclass_replace
 from typing import Any
 
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
 from tqdm import tqdm
-from voyageai import Client
+from voyageai import AsyncClient, Client
 
 
 @component
@@ -20,7 +21,7 @@ class VoyageDocumentEmbedder:
 
     doc = Document(content="I love pizza!")
 
-    document_embedder = VoyageDocumentEmbedder(model="voyage-3")
+    document_embedder = VoyageDocumentEmbedder(model="voyage-4")
 
     result = document_embedder.run([doc])
     print(result['documents'][0].embedding)
@@ -121,7 +122,32 @@ class VoyageDocumentEmbedder:
         if max_retries is None:
             max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._client: Client | None = None
+        self._async_client: AsyncClient | None = None
+
+    @property
+    def client(self) -> Client:
+        """Get the synchronous Voyage AI client, initializing it on first access."""
+        if self._client is None:
+            self.warm_up()
+        return self._client
+
+    @property
+    def async_client(self) -> AsyncClient:
+        """Get the asynchronous Voyage AI client, initializing it on first access."""
+        if self._async_client is None:
+            self.warm_up()
+        return self._async_client
+
+    def warm_up(self) -> None:
+        """Initialize the Voyage AI clients if they haven't been initialized yet."""
+        if self._client is not None:
+            return
+        api_key = self.api_key.resolve_value()
+        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -178,7 +204,7 @@ class VoyageDocumentEmbedder:
             texts_to_embed.append(text_to_embed)
         return texts_to_embed
 
-    def _embed_batch(
+    async def _embed_batch(
         self, texts_to_embed: list[str], batch_size: int
     ) -> tuple[list[list[float] | list[int]], dict[str, Any]]:
         """
@@ -192,7 +218,7 @@ class VoyageDocumentEmbedder:
             range(0, len(texts_to_embed), batch_size), disable=not self.progress_bar, desc="Calculating embeddings"
         ):
             batch = texts_to_embed[i : i + batch_size]
-            response = self.client.embed(
+            response = await self.async_client.embed(
                 texts=batch,
                 model=self.model,
                 input_type=self.input_type,
@@ -206,7 +232,7 @@ class VoyageDocumentEmbedder:
         return all_embeddings, meta
 
     @component.output_types(documents=list[Document], meta=dict[str, Any])
-    def run(self, documents: list[Document]) -> dict[str, Any]:
+    async def run(self, documents: list[Document]) -> dict[str, Any]:
         """
         Embed a list of Documents.
 
@@ -227,9 +253,10 @@ class VoyageDocumentEmbedder:
 
         texts_to_embed = self._prepare_texts_to_embed(documents=documents)
 
-        embeddings, meta = self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
+        embeddings, meta = await self._embed_batch(texts_to_embed=texts_to_embed, batch_size=self.batch_size)
 
+        new_documents = []
         for doc, emb in zip(documents, embeddings, strict=True):
-            doc.embedding = list(emb)
+            new_documents.append(dataclass_replace(doc, embedding=list(emb)))
 
-        return {"documents": documents, "meta": meta}
+        return {"documents": new_documents, "meta": meta}

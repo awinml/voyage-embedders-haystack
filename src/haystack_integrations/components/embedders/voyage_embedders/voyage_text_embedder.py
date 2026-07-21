@@ -3,7 +3,7 @@ from typing import Any
 
 from haystack import component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_secrets_inplace
-from voyageai import Client
+from voyageai import AsyncClient, Client
 
 
 @component
@@ -17,7 +17,7 @@ class VoyageTextEmbedder:
 
     text_to_embed = "I love pizza!"
 
-    text_embedder = VoyageTextEmbedder(model="voyage-3")
+    text_embedder = VoyageTextEmbedder(model="voyage-4")
 
     print(text_embedder.run(text_to_embed))
 
@@ -100,7 +100,32 @@ class VoyageTextEmbedder:
         if max_retries is None:
             max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
 
-        self.client = Client(api_key=api_key.resolve_value(), max_retries=max_retries, timeout=timeout)
+        self._timeout = timeout
+        self._max_retries = max_retries
+        self._client: Client | None = None
+        self._async_client: AsyncClient | None = None
+
+    @property
+    def client(self) -> Client:
+        """Get the synchronous Voyage AI client, initializing it on first access."""
+        if self._client is None:
+            self.warm_up()
+        return self._client
+
+    @property
+    def async_client(self) -> AsyncClient:
+        """Get the asynchronous Voyage AI client, initializing it on first access."""
+        if self._async_client is None:
+            self.warm_up()
+        return self._async_client
+
+    def warm_up(self) -> None:
+        """Initialize the Voyage AI clients if they haven't been initialized yet."""
+        if self._client is not None:
+            return
+        api_key = self.api_key.resolve_value()
+        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -135,7 +160,7 @@ class VoyageTextEmbedder:
         return default_from_dict(cls, data)
 
     @component.output_types(embedding=list[float], meta=dict[str, Any])
-    def run(self, text: str) -> dict[str, Any]:
+    async def run(self, text: str) -> dict[str, Any]:
         """
         Embed a single string.
 
@@ -156,7 +181,7 @@ class VoyageTextEmbedder:
 
         text_to_embed = self.prefix + text + self.suffix
 
-        response = self.client.embed(
+        response = await self.async_client.embed(
             texts=[text_to_embed],
             model=self.model,
             input_type=self.input_type,
