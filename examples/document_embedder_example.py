@@ -56,7 +56,7 @@ async def main():
         max_retries=1200,
     )
 
-    result = await doc_embedder.run(document_list)
+    result = await doc_embedder.run(documents=document_list)
 
     print(f"Document Text: {result['documents'][0].content}")
     print(f"Document Embedding: {result['documents'][0].embedding}")

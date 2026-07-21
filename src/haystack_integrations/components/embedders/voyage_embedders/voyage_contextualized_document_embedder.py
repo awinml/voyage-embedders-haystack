@@ -1,4 +1,3 @@
-import os
 from collections import defaultdict
 from collections.abc import Callable
 from dataclasses import replace as dataclass_replace
@@ -7,11 +6,12 @@ from typing import Any, cast
 from haystack import Document, component, default_from_dict, default_to_dict
 from haystack.utils import Secret, deserialize_callable, deserialize_secrets_inplace, serialize_callable
 from tqdm import tqdm
-from voyageai import AsyncClient, Client
+
+from haystack_integrations.components._voyage_client_mixin import VoyageClientMixin
 
 
 @component
-class VoyageContextualizedDocumentEmbedder:
+class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
     """
     A component for computing contextualized Document embeddings using Voyage's contextualized embedding models.
 
@@ -102,7 +102,6 @@ class VoyageContextualizedDocumentEmbedder:
             Maximum retries to establish contact with VoyageAI if it returns an internal error.
             If not set, inferred from VOYAGE_MAX_RETRIES environment variable or set to 5.
         """
-        self.api_key = api_key
         self.model = model
         self.input_type = input_type
         self.prefix = prefix
@@ -116,37 +115,7 @@ class VoyageContextualizedDocumentEmbedder:
         self.source_id_field = source_id_field
         self.chunk_fn = chunk_fn
 
-        if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
-        if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
-
-        self._timeout = timeout
-        self._max_retries = max_retries
-        self._client: Client | None = None
-        self._async_client: AsyncClient | None = None
-
-    @property
-    def client(self) -> Client:
-        """Get the synchronous Voyage AI client, initializing it on first access."""
-        if self._client is None:
-            self.warm_up()
-        return self._client
-
-    @property
-    def async_client(self) -> AsyncClient:
-        """Get the asynchronous Voyage AI client, initializing it on first access."""
-        if self._async_client is None:
-            self.warm_up()
-        return self._async_client
-
-    def warm_up(self) -> None:
-        """Initialize the Voyage AI clients if they haven't been initialized yet."""
-        if self._client is not None:
-            return
-        api_key = self.api_key.resolve_value()
-        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
-        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._init_client_lifecycle(api_key, timeout, max_retries)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -237,6 +206,42 @@ class VoyageContextualizedDocumentEmbedder:
 
         return dict(grouped_docs), source_order
 
+    def _embed_batch_sync(
+        self, grouped_texts: list[list[str]], batch_size: int
+    ) -> tuple[list[list[int | float]], dict[str, Any]]:
+        all_embeddings: list[list[int | float]] = []
+        meta: dict[str, Any] = {}
+        meta["total_tokens"] = 0
+
+        for i in tqdm(
+            range(0, len(grouped_texts), batch_size),
+            disable=not self.progress_bar,
+            desc="Calculating contextualized embeddings",
+        ):
+            batch = grouped_texts[i : i + batch_size]
+
+            api_params: dict[str, Any] = {}
+            api_params["inputs"] = batch
+            api_params["model"] = self.model
+
+            if self.input_type is not None:
+                api_params["input_type"] = self.input_type
+            if self.output_dtype is not None:
+                api_params["output_dtype"] = self.output_dtype
+            if self.output_dimension is not None:
+                api_params["output_dimension"] = self.output_dimension
+            if self.chunk_fn is not None:
+                api_params["chunk_fn"] = self.chunk_fn
+
+            response = self.client.contextualized_embed(**api_params)
+
+            for result in response.results:
+                all_embeddings.extend(cast(list[list[int | float]], result.embeddings))
+
+            meta["total_tokens"] += response.total_tokens
+
+        return all_embeddings, meta
+
     async def _embed_batch(
         self, grouped_texts: list[list[str]], batch_size: int
     ) -> tuple[list[list[int | float]], dict[str, Any]]:
@@ -262,7 +267,6 @@ class VoyageContextualizedDocumentEmbedder:
         ):
             batch = grouped_texts[i : i + batch_size]
 
-            # Prepare API call parameters
             api_params: dict[str, Any] = {}
             api_params["inputs"] = batch
             api_params["model"] = self.model
@@ -278,7 +282,6 @@ class VoyageContextualizedDocumentEmbedder:
 
             response = await self.async_client.contextualized_embed(**api_params)
 
-            # Flatten embeddings from all groups in this batch
             for result in response.results:
                 all_embeddings.extend(cast(list[list[int | float]], result.embeddings))
 
@@ -287,7 +290,7 @@ class VoyageContextualizedDocumentEmbedder:
         return all_embeddings, meta
 
     @component.output_types(documents=list[Document], meta=dict[str, Any])
-    async def run(self, documents: list[Document]) -> dict[str, Any]:
+    def run(self, documents: list[Document]) -> dict[str, Any]:
         """
         Embed a list of Documents using contextualized embeddings.
 
@@ -312,17 +315,65 @@ class VoyageContextualizedDocumentEmbedder:
         if not documents:
             return {"documents": [], "meta": {"total_tokens": 0}}
 
-        # Group documents by source_id
         grouped_docs, source_order = self._group_documents_by_source(documents)
 
-        # Prepare texts for each group and track original positions
         grouped_texts = []
         original_indices: list[int] = []
-        doc_positions = {id(d): i for i, d in enumerate(documents)}
+        doc_positions: dict[int, list[int]] = {}
+        for i, d in enumerate(documents):
+            doc_positions.setdefault(id(d), []).append(i)
         for source_id in source_order:
             docs = grouped_docs[source_id]
             grouped_texts.append(self._prepare_texts_to_embed(docs))
-            original_indices.extend(doc_positions[id(d)] for d in docs)
+            for d in docs:
+                original_indices.append(doc_positions[id(d)].pop(0))
+
+        embeddings, meta = self._embed_batch_sync(grouped_texts, batch_size=self.batch_size)
+
+        enriched = list(documents)
+        for emb, idx in zip(embeddings, original_indices, strict=True):
+            enriched[idx] = dataclass_replace(enriched[idx], embedding=emb)
+
+        return {"documents": enriched, "meta": meta}
+
+    @component.output_types(documents=list[Document], meta=dict[str, Any])
+    async def run_async(self, documents: list[Document]) -> dict[str, Any]:
+        """
+        Embed a list of Documents using contextualized embeddings asynchronously.
+
+        Documents are grouped by their source_id metadata field, and each group is embedded
+        together to preserve context between related chunks.
+
+        :param documents:
+            Documents to embed. Each must have a metadata field (default: 'source_id') indicating
+            which chunks belong to the same parent document.
+        :returns:
+            A dictionary with the following keys:
+            - `documents`: Documents with embeddings
+            - `meta`: Information about the usage of the model
+        """
+        if not isinstance(documents, list) or (documents and not isinstance(documents[0], Document)):
+            msg = (
+                "VoyageContextualizedDocumentEmbedder expects a list of Documents as input. "
+                "In case you want to embed a string, please use the VoyageTextEmbedder."
+            )
+            raise TypeError(msg)
+
+        if not documents:
+            return {"documents": [], "meta": {"total_tokens": 0}}
+
+        grouped_docs, source_order = self._group_documents_by_source(documents)
+
+        grouped_texts = []
+        original_indices: list[int] = []
+        doc_positions: dict[int, list[int]] = {}
+        for i, d in enumerate(documents):
+            doc_positions.setdefault(id(d), []).append(i)
+        for source_id in source_order:
+            docs = grouped_docs[source_id]
+            grouped_texts.append(self._prepare_texts_to_embed(docs))
+            for d in docs:
+                original_indices.append(doc_positions[id(d)].pop(0))
 
         embeddings, meta = await self._embed_batch(grouped_texts, batch_size=self.batch_size)
 

@@ -1,5 +1,5 @@
 import os
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from haystack import Document
@@ -305,10 +305,10 @@ class TestVoyageDocumentEmbedder:
         list_integers_input = [1, 2, 3]
 
         with pytest.raises(TypeError, match="VoyageDocumentEmbedder expects a list of Documents as input"):
-            await embedder.run(documents=string_input)
+            embedder.run(documents=string_input)
 
         with pytest.raises(TypeError, match="VoyageDocumentEmbedder expects a list of Documents as input"):
-            await embedder.run(documents=list_integers_input)
+            embedder.run(documents=list_integers_input)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -316,7 +316,7 @@ class TestVoyageDocumentEmbedder:
         embedder = VoyageDocumentEmbedder(model="voyage-3", api_key=Secret.from_token("fake-api-key"))
 
         empty_list_input = []
-        result = await embedder.run(documents=empty_list_input)
+        result = embedder.run(documents=empty_list_input)
 
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
@@ -336,9 +336,10 @@ class TestVoyageDocumentEmbedder:
         mock_response.embeddings = [[1, 2, 3, 4]]  # Simulate int8 embeddings (integers)
         mock_response.total_tokens = 2
         embedder._async_client = MagicMock()
-        embedder._async_client.embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+        embedder._client.embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
         assert len(documents_with_embeddings) == 1
@@ -372,9 +373,10 @@ class TestVoyageDocumentEmbedder:
         ]
         mock_response.total_tokens = 18
         embedder._async_client = MagicMock()
-        embedder._async_client.embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+        embedder._client.embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
         assert isinstance(documents_with_embeddings, list)
@@ -403,9 +405,10 @@ class TestVoyageDocumentEmbedder:
             return mock_response
 
         embedder._async_client = MagicMock()
-        embedder._async_client.embed = AsyncMock(side_effect=make_batch_response)
+        embedder._client = MagicMock()
+        embedder._client.embed = MagicMock(side_effect=make_batch_response)
 
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         assert len(result["documents"]) == 5
         assert all(len(doc.embedding) == 1024 for doc in result["documents"])
@@ -429,7 +432,7 @@ class TestVoyageDocumentEmbedder:
             timeout=120,
             max_retries=10,
         )
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         assert len(result["documents"]) == len(docs)
         for doc in result["documents"]:
@@ -441,10 +444,10 @@ class TestVoyageDocumentEmbedder:
 
         # Custom output dimension
         embedder_dim = VoyageDocumentEmbedder(model="voyage-4", output_dimension=512, timeout=120, max_retries=10)
-        result_dim = await embedder_dim.run(documents=[Document(content="test")])
+        result_dim = embedder_dim.run(documents=[Document(content="test")])
         assert len(result_dim["documents"][0].embedding) == 512
 
         # Quantized output
         embedder_int8 = VoyageDocumentEmbedder(model="voyage-4", output_dtype="int8", timeout=120, max_retries=10)
-        result_int8 = await embedder_int8.run(documents=[Document(content="test")])
+        result_int8 = embedder_int8.run(documents=[Document(content="test")])
         assert len(result_int8["documents"][0].embedding) == 1024

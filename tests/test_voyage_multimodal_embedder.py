@@ -1,6 +1,6 @@
 import io
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 from haystack.dataclasses import ByteStream
@@ -85,7 +85,7 @@ class TestVoyageMultimodalEmbedder:
 
         # Second access returns the same client (short-circuit branch)
         client2 = embedder.client
-        assert client2 is not None
+        assert client2 is client
 
     @pytest.mark.unit
     def test_async_client_property(self, monkeypatch):
@@ -96,6 +96,10 @@ class TestVoyageMultimodalEmbedder:
         async_client = embedder.async_client
         assert async_client is not None
         assert embedder._async_client is not None
+
+        # Second access returns the same async client (short-circuit branch)
+        async_client2 = embedder.async_client
+        assert async_client2 is async_client
 
     @pytest.mark.unit
     def test_init_with_explicit_timeout_and_retries(self):
@@ -224,18 +228,18 @@ class TestVoyageMultimodalEmbedder:
 
         # Not a list
         with pytest.raises(TypeError, match="VoyageMultimodalEmbedder expects a list of inputs"):
-            await embedder.run(inputs="text")
+            embedder.run(inputs="text")
 
         # List but items are not lists
         with pytest.raises(TypeError, match="Each input must be a list of content items"):
-            await embedder.run(inputs=["text1", "text2"])
+            embedder.run(inputs=["text1", "text2"])
 
     @pytest.mark.unit
     @pytest.mark.asyncio
     async def test_run_on_empty_list(self):
         embedder = VoyageMultimodalEmbedder(api_key=Secret.from_token("fake-api-key"))
 
-        result = await embedder.run(inputs=[])
+        result = embedder.run(inputs=[])
 
         assert result["embeddings"] == []
         assert result["meta"]["text_tokens"] == 0
@@ -331,10 +335,10 @@ class TestVoyageMultimodalEmbedder:
         mock_response.total_tokens = 10
 
         embedder._async_client = MagicMock()
-        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
         embedder._client = MagicMock()
+        embedder._client.multimodal_embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(inputs=[["Hello world"], ["Test input"]])
+        result = embedder.run(inputs=[["Hello world"], ["Test input"]])
 
         assert len(result["embeddings"]) == 2
         assert result["embeddings"][0] == [0.1, 0.2, 0.3]
@@ -343,8 +347,8 @@ class TestVoyageMultimodalEmbedder:
         assert result["meta"]["total_tokens"] == 10
 
         # Verify API was called with correct parameters
-        embedder._async_client.multimodal_embed.assert_called_once()
-        call_kwargs = embedder._async_client.multimodal_embed.call_args[1]
+        embedder._client.multimodal_embed.assert_called_once()
+        call_kwargs = embedder._client.multimodal_embed.call_args[1]
         assert call_kwargs["model"] == "voyage-multimodal-3.5"
         assert call_kwargs["truncation"] is True
 
@@ -369,13 +373,13 @@ class TestVoyageMultimodalEmbedder:
         mock_response.total_tokens = 5
 
         embedder._async_client = MagicMock()
-        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
         embedder._client = MagicMock()
+        embedder._client.multimodal_embed = MagicMock(return_value=mock_response)
 
-        await embedder.run(inputs=[["Query text"]])
+        embedder.run(inputs=[["Query text"]])
 
         # Verify API was called with all parameters
-        call_kwargs = embedder._async_client.multimodal_embed.call_args[1]
+        call_kwargs = embedder._client.multimodal_embed.call_args[1]
         assert call_kwargs["input_type"] == "query"
         assert call_kwargs["output_dimension"] == 512
         assert call_kwargs["output_dtype"] == "int8"
@@ -404,14 +408,14 @@ class TestVoyageMultimodalEmbedder:
         mock_response2.total_tokens = 3
 
         embedder._async_client = MagicMock()
-        embedder._async_client.multimodal_embed = AsyncMock(side_effect=[mock_response1, mock_response2])
         embedder._client = MagicMock()
+        embedder._client.multimodal_embed = MagicMock(side_effect=[mock_response1, mock_response2])
 
         # 3 inputs with batch_size=2 should result in 2 API calls
-        result = await embedder.run(inputs=[["text1"], ["text2"], ["text3"]])
+        result = embedder.run(inputs=[["text1"], ["text2"], ["text3"]])
 
         assert len(result["embeddings"]) == 3
-        assert embedder._async_client.multimodal_embed.call_count == 2
+        assert embedder._client.multimodal_embed.call_count == 2
         assert result["meta"]["text_tokens"] == 8
         assert result["meta"]["total_tokens"] == 8
 
@@ -435,17 +439,17 @@ class TestVoyageMultimodalEmbedder:
         mock_response.total_tokens = 12
 
         embedder._async_client = MagicMock()
-        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
         embedder._client = MagicMock()
+        embedder._client.multimodal_embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(inputs=[["Describe this image:", img]])
+        result = embedder.run(inputs=[["Describe this image:", img]])
 
         assert len(result["embeddings"]) == 1
         assert result["meta"]["image_pixels"] == 100
         assert result["meta"]["total_tokens"] == 12
 
         # Verify the image was passed correctly
-        call_kwargs = embedder._async_client.multimodal_embed.call_args[1]
+        call_kwargs = embedder._client.multimodal_embed.call_args[1]
         inputs = call_kwargs["inputs"]
         assert len(inputs) == 1
         assert inputs[0][0] == "Describe this image:"
@@ -458,16 +462,9 @@ class TestVoyageMultimodalEmbedder:
         monkeypatch.setenv("VOYAGE_TIMEOUT", "60")
         monkeypatch.setenv("VOYAGE_MAX_RETRIES", "10")
 
-        with patch(
-            "haystack_integrations.components.embedders.voyage_embedders.voyage_multimodal_embedder.Client"
-        ) as mock_client:
-            with patch(
-                "haystack_integrations.components.embedders.voyage_embedders.voyage_multimodal_embedder.AsyncClient"
-            ):
-                VoyageMultimodalEmbedder()
-
-                # Client is not created at init anymore
-                mock_client.assert_not_called()
+        embedder = VoyageMultimodalEmbedder()
+        assert embedder._timeout == 60
+        assert embedder._max_retries == 10
 
     @pytest.mark.unit
     def test_convert_content_item_video(self):
@@ -492,7 +489,7 @@ class TestVoyageMultimodalEmbedder:
             max_retries=3,
         )
 
-        result = await embedder.run(
+        result = embedder.run(
             inputs=[
                 ["What is machine learning?"],
                 ["How does natural language processing work?"],
@@ -512,7 +509,7 @@ class TestVoyageMultimodalEmbedder:
             timeout=120,
             max_retries=3,
         )
-        result_dim = await embedder_dim.run(inputs=[["test"]])
+        result_dim = embedder_dim.run(inputs=[["test"]])
         assert len(result_dim["embeddings"]) == 1
         assert len(result_dim["embeddings"][0]) == 512
 
@@ -543,16 +540,16 @@ class TestVoyageMultimodalEmbedder:
         mock_response.total_tokens = 52
 
         embedder._async_client = MagicMock()
-        embedder._async_client.multimodal_embed = AsyncMock(return_value=mock_response)
         embedder._client = MagicMock()
+        embedder._client.multimodal_embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(inputs=[["Describe this video:", mock_video]])
+        result = embedder.run(inputs=[["Describe this video:", mock_video]])
 
         assert len(result["embeddings"]) == 1
         assert result["meta"]["video_pixels"] == 1000000
         assert result["meta"]["total_tokens"] == 52
 
-        call_kwargs = embedder._async_client.multimodal_embed.call_args[1]
+        call_kwargs = embedder._client.multimodal_embed.call_args[1]
         inputs = call_kwargs["inputs"]
         assert len(inputs) == 1
         assert inputs[0][0] == "Describe this video:"

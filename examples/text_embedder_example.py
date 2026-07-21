@@ -31,7 +31,7 @@ async def main():
         max_retries=1200,
     )
 
-    result = await text_embedder.run(text)
+    result = await text_embedder.run(text=text)
     print(f"Embedding: {result['embedding']}")
     print(f"Embedding Dimension: {len(result['embedding'])}")
 

@@ -1,5 +1,5 @@
 import os
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from haystack import Document
@@ -217,7 +217,7 @@ class TestVoyageTextReranker:
         ]
 
         reranker = VoyageRanker(model=model, prefix="prefix ", suffix=" suffix")
-        result = await reranker.run(query="The food was delicious", documents=documents, top_k=2)
+        result = reranker.run(query="The food was delicious", documents=documents, top_k=2)
 
         assert len(result["documents"]) == 2
         assert all(isinstance(x, Document) for x in result["documents"])
@@ -234,13 +234,14 @@ class TestVoyageTextReranker:
             Document(content="Lyon is in France"),
         ]
 
-        # Mock the async client to see the error from voyageai
-        mock_async_client = AsyncMock(spec=["rerank"])
-        mock_async_client.rerank.side_effect = InvalidRequestError("not a valid string")
-        reranker._async_client = mock_async_client
+        # Mock the sync client to see the error from voyageai
+        mock_client = MagicMock()
+        mock_client.rerank.side_effect = InvalidRequestError("not a valid string")
+        reranker._client = mock_client
+        reranker._async_client = MagicMock()
 
         with pytest.raises(InvalidRequestError, match="not a valid string"):
-            await reranker.run(query=integer_input, documents=documents)
+            reranker.run(query=integer_input, documents=documents)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -253,7 +254,7 @@ class TestVoyageTextReranker:
         ]
 
         with pytest.raises(ValueError, match="top_k must be > 0"):
-            await reranker.run(query="test query", documents=documents, top_k=-1)
+            reranker.run(query="test query", documents=documents, top_k=-1)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -269,7 +270,7 @@ class TestVoyageTextReranker:
         ]
 
         with pytest.raises(ValueError, match="top_k must be > 0"):
-            await reranker.run(query="test query", documents=documents)
+            reranker.run(query="test query", documents=documents)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -279,21 +280,22 @@ class TestVoyageTextReranker:
         # Create 1100 documents to exceed MAX_NUM_DOCS (1000)
         documents = [Document(content=f"Content {i}") for i in range(1100)]
 
-        # Mock the async client's async_rerank method
+        # Mock the sync client's rerank method
         mock_outputs = [MagicMock(index=i, relevance_score=0.95 - (i * 0.01)) for i in range(10)]  # Return 10 results
 
         mock_response = MagicMock()
         mock_response.results = mock_outputs
 
-        mock_async_client = AsyncMock(spec=["rerank"])
-        mock_async_client.rerank = AsyncMock(return_value=mock_response)
-        reranker._async_client = mock_async_client
+        mock_client = MagicMock()
+        mock_client.rerank = MagicMock(return_value=mock_response)
+        reranker._client = mock_client
+        reranker._async_client = MagicMock()
 
-        result = await reranker.run(query="test query", documents=documents, top_k=10)
+        result = reranker.run(query="test query", documents=documents, top_k=10)
 
-        # Verify that async_rerank was called with only the first 1000 documents
-        reranker._async_client.rerank.assert_called_once()
-        call_kwargs = reranker._async_client.rerank.call_args[1]
+        # Verify that rerank was called with only the first 1000 documents
+        reranker._client.rerank.assert_called_once()
+        call_kwargs = reranker._client.rerank.call_args[1]
         assert len(call_kwargs["documents"]) == 1000
 
         # Verify results are returned correctly

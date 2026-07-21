@@ -1,12 +1,12 @@
 import io
-import os
 from typing import Any, Union
 
 from haystack import component, default_from_dict, default_to_dict, logging
 from haystack.dataclasses import ByteStream
 from haystack.utils import Secret, deserialize_secrets_inplace
 from tqdm import tqdm
-from voyageai import AsyncClient, Client
+
+from haystack_integrations.components._voyage_client_mixin import VoyageClientMixin
 
 try:
     from PIL import Image
@@ -33,7 +33,7 @@ MultimodalContent = Union[str, "Image.Image", "Video", ByteStream]
 
 
 @component
-class VoyageMultimodalEmbedder:
+class VoyageMultimodalEmbedder(VoyageClientMixin):
     """
     A component for computing embeddings using VoyageAI's multimodal embedding models.
 
@@ -119,7 +119,6 @@ class VoyageMultimodalEmbedder:
             msg = "The 'pillow' package is required for multimodal embeddings. Install it with: pip install pillow"
             raise ImportError(msg)
 
-        self.api_key = api_key
         self.model = model
         self.input_type = input_type
         self.truncate = truncate
@@ -128,37 +127,7 @@ class VoyageMultimodalEmbedder:
         self.batch_size = batch_size
         self.progress_bar = progress_bar
 
-        if timeout is None:
-            timeout = int(os.environ.get("VOYAGE_TIMEOUT", "30"))
-        if max_retries is None:
-            max_retries = int(os.environ.get("VOYAGE_MAX_RETRIES", "5"))
-
-        self._timeout = timeout
-        self._max_retries = max_retries
-        self._client: Client | None = None
-        self._async_client: AsyncClient | None = None
-
-    @property
-    def client(self) -> Client:
-        """Get the synchronous Voyage AI client, initializing it on first access."""
-        if self._client is None:
-            self.warm_up()
-        return self._client
-
-    @property
-    def async_client(self) -> AsyncClient:
-        """Get the asynchronous Voyage AI client, initializing it on first access."""
-        if self._async_client is None:
-            self.warm_up()
-        return self._async_client
-
-    def warm_up(self) -> None:
-        """Initialize the Voyage AI clients if they haven't been initialized yet."""
-        if self._client is not None:
-            return
-        api_key = self.api_key.resolve_value()
-        self._client = Client(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
-        self._async_client = AsyncClient(api_key=api_key, max_retries=self._max_retries, timeout=self._timeout)
+        self._init_client_lifecycle(api_key, timeout, max_retries)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -230,6 +199,47 @@ class VoyageMultimodalEmbedder:
             prepared.append(prepared_items)
         return prepared
 
+    def _embed_batch_sync(
+        self, inputs: list[list[Union[str, "Image.Image", "Video"]]], batch_size: int
+    ) -> tuple[list[list[float]], dict[str, Any]]:
+        all_embeddings: list[list[float]] = []
+        meta: dict[str, Any] = {
+            "text_tokens": 0,
+            "image_pixels": 0,
+            "video_pixels": 0,
+            "total_tokens": 0,
+        }
+
+        for i in tqdm(
+            range(0, len(inputs), batch_size),
+            disable=not self.progress_bar,
+            desc="Calculating multimodal embeddings",
+        ):
+            batch = inputs[i : i + batch_size]
+
+            api_params: dict[str, Any] = {
+                "inputs": batch,
+                "model": self.model,
+                "truncation": self.truncate,
+            }
+
+            if self.input_type is not None:
+                api_params["input_type"] = self.input_type
+            if self.output_dimension is not None:
+                api_params["output_dimension"] = self.output_dimension
+            if self.output_dtype is not None:
+                api_params["output_dtype"] = self.output_dtype
+
+            response = self.client.multimodal_embed(**api_params)
+
+            all_embeddings.extend(response.embeddings)
+            meta["text_tokens"] += response.text_tokens
+            meta["image_pixels"] += response.image_pixels
+            meta["video_pixels"] += response.video_pixels
+            meta["total_tokens"] += response.total_tokens
+
+        return all_embeddings, meta
+
     async def _embed_batch(
         self, inputs: list[list[Union[str, "Image.Image", "Video"]]], batch_size: int
     ) -> tuple[list[list[float]], dict[str, Any]]:
@@ -258,7 +268,6 @@ class VoyageMultimodalEmbedder:
         ):
             batch = inputs[i : i + batch_size]
 
-            # Build API call parameters
             api_params: dict[str, Any] = {
                 "inputs": batch,
                 "model": self.model,
@@ -283,7 +292,7 @@ class VoyageMultimodalEmbedder:
         return all_embeddings, meta
 
     @component.output_types(embeddings=list[list[float]], meta=dict[str, Any])
-    async def run(
+    def run(
         self,
         inputs: list[list[MultimodalContent]],
     ) -> dict[str, Any]:
@@ -324,16 +333,64 @@ class VoyageMultimodalEmbedder:
                 },
             }
 
-        # Validate that each input is a list
         for idx, inp in enumerate(inputs):
             if not isinstance(inp, list):
                 msg = f"Each input must be a list of content items. Input at index {idx} is {type(inp).__name__}."
                 raise TypeError(msg)
 
-        # Prepare inputs for the API
         prepared_inputs = self._prepare_inputs(inputs)
+        embeddings, meta = self._embed_batch_sync(prepared_inputs, self.batch_size)
 
-        # Embed in batches
+        return {"embeddings": embeddings, "meta": meta}
+
+    @component.output_types(embeddings=list[list[float]], meta=dict[str, Any])
+    async def run_async(
+        self,
+        inputs: list[list[MultimodalContent]],
+    ) -> dict[str, Any]:
+        """
+        Embed multimodal inputs asynchronously.
+
+        Each input is a list of content items (text strings, PIL Images, Videos, or ByteStreams).
+        The component returns one embedding per input.
+
+        :param inputs:
+            List of inputs to embed. Each input is a list of content items that can include:
+            - Text strings
+            - PIL Image objects
+            - Video objects (from voyageai.video_utils.Video)
+            - ByteStream objects (will be converted to PIL Images)
+
+        :returns:
+            A dictionary with the following keys:
+            - `embeddings`: List of embeddings, one per input
+            - `meta`: Metadata including token/pixel usage:
+              - `text_tokens`: Number of text tokens processed
+              - `image_pixels`: Number of image pixels processed
+              - `video_pixels`: Number of video pixels processed
+              - `total_tokens`: Total tokens (text + image + video equivalent)
+        """
+        if not isinstance(inputs, list):
+            msg = "VoyageMultimodalEmbedder expects a list of inputs."
+            raise TypeError(msg)
+
+        if not inputs:
+            return {
+                "embeddings": [],
+                "meta": {
+                    "text_tokens": 0,
+                    "image_pixels": 0,
+                    "video_pixels": 0,
+                    "total_tokens": 0,
+                },
+            }
+
+        for idx, inp in enumerate(inputs):
+            if not isinstance(inp, list):
+                msg = f"Each input must be a list of content items. Input at index {idx} is {type(inp).__name__}."
+                raise TypeError(msg)
+
+        prepared_inputs = self._prepare_inputs(inputs)
         embeddings, meta = await self._embed_batch(prepared_inputs, self.batch_size)
 
         return {"embeddings": embeddings, "meta": meta}

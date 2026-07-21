@@ -363,12 +363,12 @@ class TestVoyageContextualizedDocumentEmbedder:
         with pytest.raises(
             TypeError, match="VoyageContextualizedDocumentEmbedder expects a list of Documents as input"
         ):
-            await embedder.run(documents=string_input)
+            embedder.run(documents=string_input)
 
         with pytest.raises(
             TypeError, match="VoyageContextualizedDocumentEmbedder expects a list of Documents as input"
         ):
-            await embedder.run(documents=list_integers_input)
+            embedder.run(documents=list_integers_input)
 
     @pytest.mark.unit
     @pytest.mark.asyncio
@@ -376,7 +376,7 @@ class TestVoyageContextualizedDocumentEmbedder:
         embedder = VoyageContextualizedDocumentEmbedder(api_key=Secret.from_token("fake-api-key"))
 
         empty_list_input = []
-        result = await embedder.run(documents=empty_list_input)
+        result = embedder.run(documents=empty_list_input)
 
         assert result["documents"] is not None
         assert not result["documents"]  # empty list
@@ -414,10 +414,10 @@ class TestVoyageContextualizedDocumentEmbedder:
         mock_response.total_tokens = 10
 
         embedder._async_client = MagicMock()
-        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
-        embedder._client = MagicMock()  # For the sync client property
+        embedder._client = MagicMock()
+        embedder._client.contextualized_embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         assert len(result["documents"]) == 2
         assert result["documents"][0].embedding == [0.1, 0.2]
@@ -448,14 +448,14 @@ class TestVoyageContextualizedDocumentEmbedder:
         mock_response.total_tokens = 5
 
         embedder._async_client = MagicMock()
-        embedder._async_client.contextualized_embed = AsyncMock(return_value=mock_response)
         embedder._client = MagicMock()
+        embedder._client.contextualized_embed = MagicMock(return_value=mock_response)
 
-        await embedder.run(documents=docs)
+        embedder.run(documents=docs)
 
         # Verify the method was called with all parameters
-        embedder._async_client.contextualized_embed.assert_called_once()
-        call_kwargs = embedder._async_client.contextualized_embed.call_args[1]
+        embedder._client.contextualized_embed.assert_called_once()
+        call_kwargs = embedder._client.contextualized_embed.call_args[1]
         assert call_kwargs["input_type"] == "document"
         assert call_kwargs["output_dtype"] == "int8"
         assert call_kwargs["output_dimension"] == 512
@@ -615,7 +615,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             max_retries=10,
         )
 
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
 
@@ -637,7 +637,7 @@ class TestVoyageContextualizedDocumentEmbedder:
             timeout=120,
             max_retries=10,
         )
-        result_dim = await embedder_dim.run(documents=[Document(content="test", meta={"source_id": "doc1"})])
+        result_dim = embedder_dim.run(documents=[Document(content="test", meta={"source_id": "doc1"})])
         assert len(result_dim["documents"][0].embedding) == 512
 
     @pytest.mark.skipif(os.environ.get("VOYAGE_API_KEY", "") == "", reason="VOYAGE_API_KEY is not set")
@@ -654,7 +654,7 @@ class TestVoyageContextualizedDocumentEmbedder:
 
         embedder = VoyageContextualizedDocumentEmbedder(model="voyage-context-4")
 
-        result = await embedder.run(documents=docs)
+        result = embedder.run(documents=docs)
 
         documents_with_embeddings = result["documents"]
 

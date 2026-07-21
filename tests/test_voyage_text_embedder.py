@@ -1,5 +1,5 @@
 import os
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from haystack.utils.auth import Secret
@@ -203,14 +203,14 @@ class TestVoyageTextEmbedder:
             api_key=Secret.from_token("fake-api-key"),
         )
 
-        # Set up mock async client
         mock_response = Mock()
         mock_response.embeddings = [[0.1] * 1024]  # 1024 dimensions
         mock_response.total_tokens = 6
         embedder._async_client = MagicMock()
-        embedder._async_client.embed = AsyncMock(return_value=mock_response)
+        embedder._client = MagicMock()
+        embedder._client.embed = MagicMock(return_value=mock_response)
 
-        result = await embedder.run(text="The food was delicious")
+        result = embedder.run(text="The food was delicious")
 
         assert len(result["embedding"]) == 1024
         assert all(isinstance(x, float) for x in result["embedding"])
@@ -228,7 +228,7 @@ class TestVoyageTextEmbedder:
             timeout=120,
             max_retries=10,
         )
-        result = await embedder.run(text="The food was delicious")
+        result = embedder.run(text="The food was delicious")
 
         assert len(result["embedding"]) == 1024
         assert all(isinstance(x, float) for x in result["embedding"])
@@ -236,12 +236,12 @@ class TestVoyageTextEmbedder:
 
         # Custom output dimension
         embedder_dim = VoyageTextEmbedder(model="voyage-4", output_dimension=512, timeout=120, max_retries=10)
-        result_dim = await embedder_dim.run(text="test")
+        result_dim = embedder_dim.run(text="test")
         assert len(result_dim["embedding"]) == 512
 
         # Quantized output
         embedder_int8 = VoyageTextEmbedder(model="voyage-4", output_dtype="int8", timeout=120, max_retries=10)
-        result_int8 = await embedder_int8.run(text="test")
+        result_int8 = embedder_int8.run(text="test")
         assert len(result_int8["embedding"]) == 1024
 
     @pytest.mark.unit
@@ -252,4 +252,4 @@ class TestVoyageTextEmbedder:
         list_integers_input = [1, 2, 3]
 
         with pytest.raises(TypeError, match="VoyageTextEmbedder expects a string as an input"):
-            await embedder.run(text=list_integers_input)
+            embedder.run(text=list_integers_input)

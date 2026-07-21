@@ -170,12 +170,4 @@ invalid-argument-type = "ignore"
 unresolved-attribute = "ignore"
 
 # Haystack @component decorator and voyageai client typing limitations
-[[tool.ty.overrides]]
-include = ["src/**"]
-
-[tool.ty.overrides.rules]
-invalid-argument-type = "ignore"
-# voyageai.AsyncClient lacks type stubs for async_* methods
-unresolved-attribute = "ignore"
-# client/async_client properties return after None-check, ty can't narrow
-invalid-return-type = "ignore"
+# Per-file overrides below, suppressed inline where possible
