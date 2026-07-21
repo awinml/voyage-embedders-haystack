@@ -77,6 +77,45 @@ class TestVoyageContextualizedDocumentEmbedder:
             embedder.warm_up()
 
     @pytest.mark.unit
+    def test_warm_up(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        assert embedder._client is None
+        assert embedder._async_client is None
+        embedder.warm_up()
+        assert embedder._client is not None
+        assert embedder._async_client is not None
+
+        # Idempotent
+        embedder.warm_up()
+        assert embedder._client is not None
+
+    @pytest.mark.unit
+    def test_client_property(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        assert embedder._client is None
+        client = embedder.client
+        assert client is not None
+        assert embedder._client is not None
+
+        # Second access returns the same client (short-circuit branch)
+        client2 = embedder.client
+        assert client2 is not None
+
+    @pytest.mark.unit
+    def test_async_client_property(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageContextualizedDocumentEmbedder()
+
+        assert embedder._async_client is None
+        async_client = embedder.async_client
+        assert async_client is not None
+        assert embedder._async_client is not None
+
+    @pytest.mark.unit
     def test_to_dict(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         component = VoyageContextualizedDocumentEmbedder()

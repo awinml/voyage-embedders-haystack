@@ -68,6 +68,57 @@ class TestVoyageDocumentEmbedder:
             embedder.warm_up()
 
     @pytest.mark.unit
+    def test_warm_up(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageDocumentEmbedder(model="voyage-3")
+
+        assert embedder._client is None
+        assert embedder._async_client is None
+        embedder.warm_up()
+        assert embedder._client is not None
+        assert embedder._async_client is not None
+
+        # Idempotent
+        embedder.warm_up()
+        assert embedder._client is not None
+
+    @pytest.mark.unit
+    def test_client_property(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageDocumentEmbedder(model="voyage-3")
+
+        assert embedder._client is None
+        client = embedder.client
+        assert client is not None
+        assert embedder._client is not None
+
+        # Second access returns the same client (short-circuit branch)
+        client2 = embedder.client
+        assert client2 is not None
+
+    @pytest.mark.unit
+    def test_async_client_property(self, monkeypatch):
+        monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
+        embedder = VoyageDocumentEmbedder(model="voyage-3")
+
+        assert embedder._async_client is None
+        async_client = embedder.async_client
+        assert async_client is not None
+        assert embedder._async_client is not None
+
+    @pytest.mark.unit
+    def test_init_with_explicit_timeout_and_retries(self):
+        embedder = VoyageDocumentEmbedder(
+            model="voyage-3",
+            api_key=Secret.from_token("fake-api-key"),
+            timeout=60,
+            max_retries=10,
+        )
+        assert embedder._client is None
+        assert embedder._timeout == 60
+        assert embedder._max_retries == 10
+
+    @pytest.mark.unit
     def test_to_dict(self, monkeypatch):
         monkeypatch.setenv("VOYAGE_API_KEY", "fake-api-key")
         component = VoyageDocumentEmbedder(model="voyage-3")
