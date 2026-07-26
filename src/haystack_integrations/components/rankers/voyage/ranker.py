@@ -32,6 +32,7 @@ class VoyageRanker(VoyageClientMixin):
 
     def __init__(
         self,
+        *,
         model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
         truncate: bool | None = None,

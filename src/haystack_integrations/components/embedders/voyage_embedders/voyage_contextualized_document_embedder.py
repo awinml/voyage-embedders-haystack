@@ -41,6 +41,7 @@ class VoyageContextualizedDocumentEmbedder(VoyageClientMixin):
 
     def __init__(
         self,
+        *,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
         model: str = "voyage-context-4",
         input_type: str | None = None,

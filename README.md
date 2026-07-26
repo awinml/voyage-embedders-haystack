@@ -17,12 +17,10 @@ Custom components for [Haystack](https://github.com/deepset-ai/haystack) for cre
 
 Voyage’s embedding models are state-of-the-art in retrieval accuracy. These models outperform top performing embedding models like `intfloat/e5-mistral-7b-instruct` and `OpenAI/text-embedding-3-large` on the [MTEB Benchmark](https://github.com/embeddings-benchmark/mteb).
 
-#### What's New (v2.0.0)
+#### What's New (v3.0.0)
 
-- **Haystack 3.x compatibility**: All components now work with `haystack-ai>=3.0.0`.
-- **Lazy initialization**: Components now use `warm_up()` for lazy client creation. The `client` property auto-initializes on first access.
-- **Async support**: All components now have `async def run()` methods for Haystack 3.x async pipelines.
-- **Document immutability**: Document embedders now use `dataclasses.replace()` to return new Document instances instead of mutating them in-place.
+- **Keyword-only arguments**: All component constructors now take keyword-only arguments — use `VoyageTextEmbedder(model="voyage-4")` rather than `VoyageTextEmbedder("voyage-4")`. This keeps constructors safe to extend without silently shifting the meaning of existing call sites.
+- **Agent tool example**: A new [example](https://github.com/awinml/voyage-embedders-haystack/blob/main/examples/agent_tool_example.py) wrapping a Voyage retrieve-and-rerank pipeline as a `ComponentTool` for a Haystack `Agent`.
 
 See the full [Changelog](CHANGELOG.md) for all releases.
 
@@ -88,7 +86,7 @@ The `VoyageContextualizedDocumentEmbedder` uses Voyage's contextualized embeddin
 - Documents are grouped by a metadata field (default: `source_id`)
 - Chunks from the same source document are embedded together
 - Maintains semantic connections between related chunks
-- Recommended model: `voyage-context-3`
+- Recommended model: `voyage-context-4` (the component default)
 
 For detailed usage examples, see the [contextualized embedder example](https://github.com/awinml/voyage-embedders-haystack/blob/main/examples/contextualized_embedder_example.py).
 
@@ -178,6 +176,10 @@ top_result = results["Retriever"]["documents"][0].content
 print("The top search result is:")
 print(top_result)
 ```
+
+### Using Voyage Search as an Agent Tool
+
+You can wrap a Voyage retrieve-and-rerank pipeline as a tool and hand it to a Haystack [`Agent`](https://docs.haystack.deepset.ai/docs/agents) with [`ComponentTool`](https://docs.haystack.deepset.ai/docs/componenttool), so the agent decides when to search your corpus and grounds its answers in the retrieved passages. See the [agent tool example](https://github.com/awinml/voyage-embedders-haystack/blob/main/examples/agent_tool_example.py) for a complete, runnable script.
 
 ## Contributing
 

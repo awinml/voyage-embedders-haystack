@@ -5,29 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-07-26
+
+### Changed
+
+- **Breaking**: All component `__init__` parameters are now keyword-only. `VoyageTextEmbedder`, `VoyageDocumentEmbedder`, `VoyageContextualizedDocumentEmbedder`, `VoyageMultimodalEmbedder` and `VoyageRanker` no longer accept positional arguments. This keeps the constructors safe to extend and reorder, and matches how components are built from serialized pipelines. The `run()` and `run_async()` signatures are unchanged.
+
+### Migration Notes
+
+- Pass constructor arguments by name:
+
+  ```python
+  # Before
+  embedder = VoyageTextEmbedder("voyage-4")
+
+  # After
+  embedder = VoyageTextEmbedder(model="voyage-4")
+  ```
+
+- Pipeline YAML, `from_dict()` and any call that already used keyword arguments are unaffected.
+
 ## [2.0.0] - 2026-07-21
 
 ### Added
 
 - **Haystack 3.x compatibility**: Components now work with `haystack-ai>=3.0.0`.
 - **`warm_up()` method**: All components now support lazy initialization via `warm_up()`. The `client` and `async_client` properties auto-initialize on first access.
-- **Async support**: All components now have `async def run()` methods for use with Haystack 3.x async pipelines.
+- **Async support**: All components now have `async def run_async()` methods for use with Haystack 3.x async pipelines. The synchronous `run()` methods are unchanged.
 - **Async client**: Components use `voyageai.AsyncClient` for async operations with `async_embed()`, `async_rerank()`, `async_multimodal_embed()`, and `async_contextualized_embed()`.
 
 ### Changed
 
 - **Breaking**: `VoyageDocumentEmbedder.run()` and `VoyageContextualizedDocumentEmbedder.run()` now return new Document instances via `dataclasses.replace()` instead of mutating documents in-place (Haystack 3.x Document immutability).
 - **Breaking**: The `client` is no longer created at `__init__`. It is now lazily initialized on first access via `warm_up()`. This means `__init__` no longer fails if the API key is missing — `warm_up()` or the `client`/`async_client` property will raise the error.
-- **Breaking**: All `run()` methods are now `async def run()` for compatibility with Haystack 3.x.
 - **Breaking**: Minimum Haystack version is now `haystack-ai>=3.0.0`.
 
 ### Migration Notes
 
-- If you were calling `VoyageTextEmbedder.run()` directly, you now need to `await` it:
+- Existing synchronous calls to `run()` continue to work unchanged. To run a component asynchronously, call `run_async()` instead:
   ```python
-  result = await embedder.run(text="Hello")
+  result = await embedder.run_async(text="Hello")
   ```
-- In Haystack pipelines, the `Pipeline.run_async()` method handles async components automatically.
+- In Haystack pipelines, the `Pipeline.run_async()` method dispatches to each component's `run_async()` automatically.
 - If you were checking `embedder.client` at init, note that the client is now lazily created. Call `embedder.warm_up()` if you need it initialized eagerly.
 
 ## [1.10.0] - 2026-02-15
@@ -112,7 +131,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `VoyageTextEmbedder` and `VoyageDocumentEmbedder` to embed strings and documents.
 
-[unreleased]: https://github.com/awinml/voyage-embedders-haystack/compare/v2.0.0...HEAD
+[unreleased]: https://github.com/awinml/voyage-embedders-haystack/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v2.0.0...v3.0.0
 [2.0.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.10.0...v2.0.0
 [1.10.0]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.9.1...v1.10.0
 [1.9.1]: https://github.com/awinml/voyage-embedders-haystack/compare/v1.9.0...v1.9.1
