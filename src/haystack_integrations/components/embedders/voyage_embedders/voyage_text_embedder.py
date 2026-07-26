@@ -27,6 +27,7 @@ class VoyageTextEmbedder(VoyageClientMixin):
 
     def __init__(
         self,
+        *,
         model: str,
         api_key: Secret = Secret.from_env_var("VOYAGE_API_KEY"),
         input_type: str | None = None,
