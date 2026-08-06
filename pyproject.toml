@@ -48,7 +48,7 @@ dev = [
   "pytest-timeout>=2.3.0",
   "datasets",
   "ty>=0.0.32",
-  "ruff>=0.15.22",
+  "ruff>=0.16.1",
   "pre-commit>=4.5.0",
   "python-dotenv",
   "pytest-asyncio>=1.4.0",
