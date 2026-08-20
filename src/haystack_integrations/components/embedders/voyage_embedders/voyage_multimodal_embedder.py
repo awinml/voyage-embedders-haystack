@@ -21,7 +21,6 @@ try:
     VIDEO_AVAILABLE = True
 except ImportError:  # pragma: no cover
     VIDEO_AVAILABLE = False
-    Video = None  # ty: ignore[invalid-assignment]
 
 
 logger = logging.getLogger(__name__)
@@ -178,7 +177,7 @@ class VoyageMultimodalEmbedder(VoyageClientMixin):
             return Image.open(io.BytesIO(item.data))
         elif PIL_AVAILABLE and isinstance(item, Image.Image):
             return item
-        elif VIDEO_AVAILABLE and Video is not None and isinstance(item, Video):
+        elif VIDEO_AVAILABLE and isinstance(item, Video):
             # Pass Video objects through directly
             return item
         else:
